@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1> First step to create a pull requests table </h1>
+<form action ="" method="post">
+  {{ form.hidden_tag() }}
+  <p>
+      {{ form.repo_name.label }}<br>
+      {{ form.repo_name(size=60) }}
+      {% for error in form.repo_name.errors %}
+      <span style="color: red;">{{ error }} </span>
+      {% endfor %}
+  </p>
+  <p>{{ form.submit() }}</p>
+</form>
+{% endblock %}
