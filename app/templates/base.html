@@ -1,14 +1,14 @@
 <html>
   <head>
     {% if title %}
-    <title>{{ title }} - Pulls table </title>
+    <title>{{ title }} </title>
     {% else %}
-    <title> Pulls table </title>
+    <title> Pulls dashboard </title>
     {% endif %}
   </head>
   <body>
     <div>
-      Pulls table: 
+      Pulls dashboard: 
       <a href="{{ url_for('choice') }}">Home</a>
     </div>
     {% with messages = get_flashed_messages() %}

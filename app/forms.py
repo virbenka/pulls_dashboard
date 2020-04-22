@@ -6,4 +6,4 @@ class RepoChoice(FlaskForm):
     repo_name = StringField(
         'Enter the name of your repo', validators=[DataRequired()]
     )
-    submit = SubmitField('Sign in')
+    submit = SubmitField('Create dashboard')
