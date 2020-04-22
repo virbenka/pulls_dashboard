@@ -1,5 +1,5 @@
 # pulls-table
-Table for systematic view of pull requests for a selected repository
+Dashboard for systematic view of pull requests of a selected repository
 
 
 To run locally:
