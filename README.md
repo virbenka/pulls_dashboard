@@ -1,4 +1,4 @@
-# pulls-table
+# pulls dashboard
 Dashboard for systematic view of pull requests of a selected repository
 
 
