@@ -8,13 +8,15 @@ from app.repo import RepoDetails
 def choice():
     form = RepoChoice()
     if form.validate_on_submit():
-        flash('Repository {} requested'.format(form.repo_name.data))
-
-        return redirect(url_for('create_dashboard', repo=form.repo_name.data))
+        return redirect(url_for('create_dashboard', owner=form.owner.data, name=form.name.data))
     return render_template('choice.html', title='Form', form=form)
 
-@app.route('/dashboard/<repo>', methods=['GET', 'POST'])
-def create_dashboard(repo):
-    repo = RepoDetails(repo)
-    repo_name = repo.getName()
-    return render_template('dashboard.html', title='Dashboard', text="lalalla", repo_name=repo_name)
+@app.route('/dashboard/<owner>/<name>', methods=['GET', 'POST'])
+def create_dashboard(owner, name):
+    repo = RepoDetails(owner, name)
+    if repo.validateRepo():
+        repo_link = repo.getLink()
+        return render_template('dashboard.html', title='Dashboard', text="lalalla", repo_link=repo_link)
+    else:
+        flash("This repository doesn't exist")
+        return redirect(url_for('choice'))

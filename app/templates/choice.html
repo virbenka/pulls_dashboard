@@ -5,12 +5,18 @@
 <form action ="" method="post">
   {{ form.hidden_tag() }}
   <p>
-      {{ form.repo_name.label }}<br>
-      {{ form.repo_name(size=60) }}
-      {% for error in form.repo_name.errors %}
+      {{ form.owner.label }}<br>
+      {{ form.owner(size=60) }}
+      {% for error in form.owner.errors %}
       <span style="color: red;">{{ error }} </span>
       {% endfor %}
   </p>
+  <p>
+      {{ form.name.label }}<br>
+      {{ form.name(size=60) }}
+      {% for error in form.name.errors %}
+      <span style="color: red;">{{ error }} </span>
+      {% endfor %}
   <p>{{ form.submit() }}</p>
 </form>
 {% endblock %}
