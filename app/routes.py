@@ -1,7 +1,7 @@
 from flask import render_template, flash, redirect, url_for
 from app import app
 from app.forms import RepoChoice
-from app.repo import RepoDetails
+from app.repo import RepoDetails, PullRequest
 
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/choice', methods=['GET', 'POST'])
@@ -16,7 +16,9 @@ def create_dashboard(owner, name):
     repo = RepoDetails(owner, name)
     if repo.validateRepo():
         repo_link = repo.getLink()
-        return render_template('dashboard.html', title='Dashboard', text="lalalla", repo_link=repo_link)
+        pull_requests = repo.getRequests()
+        return render_template('dashboard.html', title='Dashboard',
+                               text="lalalla", repo_link=repo_link, pull_requests=pull_requests)
     else:
         flash("This repository doesn't exist")
         return redirect(url_for('choice'))

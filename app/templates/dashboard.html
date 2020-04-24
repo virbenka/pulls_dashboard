@@ -1,16 +1,21 @@
 {% extends "base.html" %}
 
 {% block content %}
-  <h1>Dashboard for pull requests of <a href="{{ ''.join(['http://', repo_link]) }}"> {{ repo_link }} </a></h1>
+  <h1>Dashboard for pull requests of <a href="{{ ''.join(['http://', repo_link]) }}" > {{ repo_link }} </a></h1>
   <table>
-  <TR>
-     <TD class="c1"><IMG src="favicon.ico"></TD>
-     <TD class="c2">HI</TD>
-     <TD class="c3">ITS</TD>
-     <TD class="c4"><SPAN>SSSSS</SPAN></TD>
-     <TD class="c5"><SPAN>OOOO</SPAN></TD>
-  </TR>
-  </table>
+  <thead>
+    <tr>
+      <th>Author</th>
+      <th>Title</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for pull in pull_requests %} 
+      <tr>
+        <td> <img src="{{ pull.getAvatar() }}" style="width:48px;height:48px;"> </td>
+        <td> {{ pull.getTitle() }} </td>
+      </tr>
+    {% endfor %}
 
 {% endblock %}
 
