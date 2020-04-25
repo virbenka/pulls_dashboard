@@ -1,0 +1,22 @@
+.hideContent {
+    overflow: hidden;
+    height:0em;
+}
+
+.showContent {
+    line-height: 1em;
+    height: auto;
+}
+.showContent{
+    height: auto;
+}
+
+.show-more {
+    padding: 10px 0;
+    text-align: center;
+}
+
+td {
+    width:200px;
+    border: solid 1px;
+}

@@ -5,6 +5,16 @@
     {% else %}
     <title> Pulls dashboard </title>
     {% endif %}
+    <style>
+    table, th, td {
+      border: 1px solid black;
+    }
+    </style>
+    <script src="{{url_for('static', filename='dashboard.js')}}"></script>
+    <!-- build:css ../static-$dashboard.css -->
+    <link rel="stylesheet" href="../static/dahsboard.css">
+    <!-- endbuild -->
+
   </head>
   <body>
     <div>
