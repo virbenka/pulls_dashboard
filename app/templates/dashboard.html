@@ -9,24 +9,42 @@
       <th>Author</th>
       <th>Title</th>
       <th>Status</th>
+      <th>Labels</th>
+      <th>Changes</th>
     </tr>
   </thead>
   <tbody>
     {% for pull in pull_requests %} 
       <tr>
+        {% set author = pull.get_login() %}
+        {% set author_info = pull.get_people()[author] %}
+        
         <td> Last update: {{ pull.get_last_update() }} 
             <br> Created at: {{ pull.get_created() }} </td>
         <td style="text-align:center" width="60px"> 
-          <img src="{{ pull.get_avatar() }}" style="width:55px;height:55px;"> <br>
-          {{ pull.get_login() }} 
+          <img src="{{ author_info.avatar }}" style="width:55px;height:55px;"> <br>
+          {{ author }}
+          {% if author_info.association != "NONE" %}
+          <br> {{ author_info.association }} 
+          {% endif %}
         <td style="text-align:center" width="300px">{{ pull.get_title() }} 
-          <div class="content hideContent"> {{ pull.get_description() }} </div>
+          <div class="content hideContent">  PLACE FOR DESCRIPTION </div>
           <div class="show-more"><a href="#">Show more</a></div>
         </td>
         <td> {% for elem in pull.get_statuses() %}
-              {{ pull.get_statuses[elem] }} : {{ elem }}
+             {{ pull.get_statuses()[elem] }} : {{ elem }} <br>
              {% endfor %}
         </td>
+        <td> {% for elem in pull.get_labels() %}
+             {{ elem }} <br>
+             {% endfor %}
+        </td>
+        <td> {% set changes = pull.get_changes() %}  
+             {{ changes.commits }} commits created <br>
+             {{ changes.additions }} lines addes <br>
+             {{ changes.deletions }} lines deleted <br>
+        </td>
+
       </tr>
     {% endfor %}
 

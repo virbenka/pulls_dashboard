@@ -14,9 +14,10 @@ def choice():
 @app.route('/dashboard/<owner>/<name>', methods=['GET', 'POST'])
 def create_dashboard(owner, name):
     repo = RepoDetails(owner, name)
-    if repo.validateRepo():
-        repo_link = repo.getLink()
-        pull_requests = repo.getRequests()
+    if repo.validate_repo():
+        repo_link = repo.get_link()
+        pull_requests = repo.get_requests()
+        print("done")
         return render_template('dashboard.html', title='Dashboard',
                                text="lalalla", repo_link=repo_link, pull_requests=pull_requests)
     else:
