@@ -1,18 +1,37 @@
+import functools
 import requests
 import threading
 
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
+
 from collections import Counter
+from app import app
+
+def create_requests_session():
+    session = requests.Session()
+    session.headers.update({'Accept': app.config['ACCEPT_HEADER'],
+                            'Authorization': 'token {}'.format(app.config['GITHUB_TOKEN'])}
+                           )
+    retry = Retry(
+        total=app.config["REQUEST_RETRIES"],
+        read=app.config["REQUEST_RETRIES"],
+        connect=app.config["REQUEST_RETRIES"],
+        backoff_factor=0.1
+    )
+    adapter = HTTPAdapter(max_retries=retry)
+    session.mount('https://', adapter)
+    session.request = functools.partial(session.request, timeout=app.config['REQUEST_TIMEOUT'])
+    return session
+
+
 
 class RepoDetails():
     def __init__ (self, owner, name):
+        self.session = create_requests_session()
         self.link = "https://github.com/{}/{}".format(owner, name)
         self.dev_link = "https://api.github.com/repos/{}/{}".format(owner, name)
-        self.response = requests.get(self.dev_link+'/pulls?state=open',
-            headers={
-                    'Accept':'application/vnd.github.antiope-preview+json',
-                    'Authorization': 'token {}'.format('b32a5cb79af5119bd7f74dde2bb7208e603abf04')
-            }
-        )
+        self.response = self.session.get(self.dev_link+'/pulls?state=open')
         if self.response:
             self.response = self.response.json()
             self.people = {}
@@ -23,7 +42,7 @@ class RepoDetails():
     def get_link(self):
         return self.link
     def handle_pull_request(self, elem):
-        pull = PullRequest(elem, self.dev_link)
+        pull = PullRequest(elem, self.dev_link, self.session)
         self.pull_requests.add(pull)
         self.people.update(pull.get_people())
     def set_requests(self):
@@ -52,14 +71,10 @@ class RepoDetails():
         return self.pull_requests
 
 class PullRequest():
-    def __init__ (self, data, dev_link):
+    def __init__ (self, data, dev_link, session):
+        self.session = session
         self.number = data['number']
-        info = requests.get(dev_link+"/pulls/"+str(self.number),
-            headers={
-                    'Accept':'application/vnd.github.antiope-preview+json',
-                    'Authorization': 'token {}'.format('b32a5cb79af5119bd7f74dde2bb7208e603abf04')
-            }
-        ).json()
+        info = self.session.get(dev_link+"/pulls/"+str(self.number)).json()
         self.login = info['user']['login']
         self.people = {}
         self.update_people(self.login, info["user"]["avatar_url"], info["author_association"])
@@ -103,44 +118,9 @@ class PullRequest():
         return self.people
     def set_tests_results(self, dev_link):
         results = Counter()
-        try:
-            info = requests.get(dev_link+"/status/"+self.last_commit,
-            headers={'Accept':'application/vnd.github.antiope-preview+json',
-                    'Authorization': 'token {}'.format('b32a5cb79af5119bd7f74dde2bb7208e603abf04')
-                    },
-            timeout=2
-                            )
-        except:
-            print("retrying")
-            try:
-                info = requests.get(dev_link+"/status/"+self.last_commit,
-                headers={'Accept':'application/vnd.github.antiope-preview+json',
-                        'Authorization': 'token {}'.format('b32a5cb79af5119bd7f74dde2bb7208e603abf04')
-                        },
-                timeout=2
-                                )
-            except:
-                return Counter('failed_to_test')
-
+        info = self.session.get(dev_link+"/status/"+self.last_commit)
         for test in info.json()["statuses"]:
             results.update([test["state"]])
         return results
     def set_last_action(self, dev_link):
-            try:
-                info = requests.get(dev_link+"/issues/"+self.number+'/comments',
-                headers={'Accept':'application/vnd.github.antiope-preview+json',
-                        'Authorization': 'token {}'.format('b32a5cb79af5119bd7f74dde2bb7208e603abf04')
-                        },
-                timeout=2
-                                )
-            except:
-                print("retrying asking comments")
-                try:
-                    info = requests.get(dev_link+"/issues/"+self.number+'/comments',
-                    headers={'Accept':'application/vnd.github.antiope-preview+json',
-                            'Authorization': 'token {}'.format('b32a5cb79af5119bd7f74dde2bb7208e603abf04')
-                            },
-                    timeout=2
-                                    )
-                except:
-                        return "couldn't load comments"
+            info = self.session.get(dev_link+"/issues/"+self.number+'/comments')
