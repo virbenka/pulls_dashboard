@@ -17,9 +17,11 @@ def create_dashboard(owner, name):
     if repo.validate_repo():
         repo_link = repo.get_link()
         pull_requests = repo.get_requests()
+        people = repo.get_people()
         print("done")
         return render_template('dashboard.html', title='Dashboard',
-                               text="lalalla", repo_link=repo_link, pull_requests=pull_requests)
+                               text="lalalla", repo_link=repo_link, pull_requests=pull_requests,
+                               people=people)
     else:
         flash("This repository doesn't exist")
         return redirect(url_for('choice'))

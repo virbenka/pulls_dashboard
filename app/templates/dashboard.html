@@ -11,22 +11,21 @@
       <th>Status</th>
       <th>Labels</th>
       <th>Changes</th>
+      <th>Reviewed by</th>
+      <th>Approved by</th>
+      <th>Last event</th>
     </tr>
   </thead>
   <tbody>
     {% for pull in pull_requests %} 
       <tr>
         {% set author = pull.get_login() %}
-        {% set author_info = pull.get_people()[author] %}
         
-        <td> Last update: {{ pull.get_last_update() }} 
-            <br> Created at: {{ pull.get_created() }} </td>
+          <td> Created at: {{ pull.get_created() }} </td>
         <td style="text-align:center" width="60px"> 
-          <img src="{{ author_info.avatar }}" style="width:55px;height:55px;"> <br>
+          <img src="{{ people[author].avatar }}" style="width:55px;height:55px;"> <br>
           {{ author }}
-          {% if author_info.association != "NONE" %}
-          <br> {{ author_info.association }} 
-          {% endif %}
+          <br> {{ people[author].association }} 
         <td style="text-align:center" width="300px">{{ pull.get_title() }} 
           <div class="content hideContent">  PLACE FOR DESCRIPTION </div>
           <div class="show-more"><a href="#">Show more</a></div>
@@ -43,6 +42,23 @@
              {{ changes.commits }} commits created <br>
              {{ changes.additions }} lines addes <br>
              {{ changes.deletions }} lines deleted <br>
+        </td>
+        <td> {% for person in pull.get_reviewed_by() %}
+             <img src="{{ people[person].avatar }}" style="width:55px;height:55px;"> 
+             {% endfor %}
+        <td> {% for person in pull.get_approved_by() %}
+             <img src="{{ people[person].avatar }}" style="width:55px;height:55px;"> 
+             {% endfor %}
+        </td>
+        <td> {% set action = pull.get_last_action() %}
+                {% if action %}
+                  {% if action == "commited" %}
+                    <img src="{{ people[author].avatar }}" style="width:55px;height:55px;"> made a commit 
+                  {% else %}
+                    <img src="{{ people[action.person].avatar }}" style="width:55px;height:55px;"> {{ action.event }}
+                  {% endif %}
+                  <br> {{ pull.get_last_update() }} 
+                {% endif %}
         </td>
 
       </tr>
