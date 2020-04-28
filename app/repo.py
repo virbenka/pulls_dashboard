@@ -167,6 +167,7 @@ class PullRequest():
                                          "event": "commented"}
 
     def set_last_event(self):
+        self.last_event = {}
         events = self.session.get(
             self.link+"/issues/"+self.number+"/events"
         ).json()
