@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 
-{% block content %}
+{% block app_content %}
   <h1>Dashboard for pull requests of <a href="{{ ''.join([repo_link]) }}" > {{ repo_link }} </a></h1>
-  <table>
+  <table class="table table-hover">
   <thead>
     <tr>
       <th>Time</th>
@@ -27,8 +27,16 @@
           {{ author }}
           <br> {{ people[author].association }} 
         <td style="text-align:center" width="300px">{{ pull.get_title() }} 
-          <div class="content hideContent">  PLACE FOR DESCRIPTION </div>
-          <div class="show-more"><a href="#">Show more</a></div>
+          <p>
+          <button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#{{pull.get_number()}}" aria-expanded="false" >
+                Show description 
+              </button>
+            </p>
+            <div class="collapse" id="{{pull.get_number()}}">
+              <div class="card card-body">
+                {{ pull.get_description() }}
+              </div>
+            </div>
         </td>
         <td> {% for elem in pull.get_statuses() %}
              {{ pull.get_statuses()[elem] }} : {{ elem }} <br>

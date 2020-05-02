@@ -1,22 +1,13 @@
 {% extends "base.html" %}
+{% import 'bootstrap/wtf.html' as wtf %}
 
-{% block content %}
-<h1> First step to create a pull requests dashboard </h1>
-<form action ="" method="post">
-  {{ form.hidden_tag() }}
-  <p>
-      {{ form.owner.label }}<br>
-      {{ form.owner(size=60) }}
-      {% for error in form.owner.errors %}
-      <span style="color: red;">{{ error }} </span>
-      {% endfor %}
-  </p>
-  <p>
-      {{ form.name.label }}<br>
-      {{ form.name(size=60) }}
-      {% for error in form.name.errors %}
-      <span style="color: red;">{{ error }} </span>
-      {% endfor %}
-  <p>{{ form.submit() }}</p>
-</form>
+
+{% block app_content %}
+    <h1> First step to create a pull requests dashboard </h1>
+    <div class="row">
+        <div class="col-md-4">
+            {{ wtf.quick_form(form) }}
+        </div>
+    </div>
 {% endblock %}
+

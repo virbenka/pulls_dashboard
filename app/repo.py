@@ -159,8 +159,10 @@ class PullRequest():
                 and self.time(reviews[-1]["submitted_at"]) > \
                 self.time(self.last_comment["time"]):
                     print("TUT")
-                    text = self.session.get(self.link+"/pulls"+self.number+
-                                                "/comments").json()[-1]["body"]
+                    text = self.session.get(self.link+"/pulls/"+self.number+
+                                                "/comments")
+                    print(text)
+                    text = text.json()[-1]["body"]
                     self.last_comment = {"person": review["user"]["login"],
                                         "time": review["submitted_at"],
                                         "text": text,
@@ -209,6 +211,8 @@ class PullRequest():
     @staticmethod
     def time(time):
         return int(''.join(x for x in time if x.isdigit()))
+    def get_number(self):
+        return str(self.number)
     def get_login(self):
         return self.login
     def get_avatar(self):
