@@ -3,8 +3,10 @@ import functools
 import requests
 import threading
 
+from datetime import datetime
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
+from time import time
 
 from collections import Counter
 from app import app
@@ -36,6 +38,8 @@ class RepoDetails():
         if self.response:
             self.response = self.response.json()
             self.people = {}
+            self.labels = {}
+            self.tests = {}
             self.threads = []
             self.set_requests()
     def validate_repo(self):
@@ -45,7 +49,9 @@ class RepoDetails():
     def handle_pull_request(self, elem):
         pull = PullRequest(elem, self.dev_link, self.session)
         self.pull_requests.add(pull)
-        self.people.update(pull.get_people())
+        self.people.update(pull.get_people_info())
+        self.labels.update(pull.get_labels_info())
+        self.tests.update(pull.get_tests_info())
     def set_requests(self):
         response = self.response
         print(len(response))
@@ -73,6 +79,10 @@ class RepoDetails():
         return self.pull_requests
     def get_people(self):
         return self.people
+    def get_labels(self):
+        return self.labels
+    def get_tests(self):
+        return self.tests
     def sort_by_time(self):
         self.pull_requests = sorted(self.pull_requests, key=lambda x: \
                                     x.get_last_update(), reverse=True)
@@ -92,8 +102,8 @@ class PullRequest():
         self.created = info['created_at']
         self.description = info['body']
         self.last_commit = info['statuses_url'].split('/')[-1]
-        self.statuses = self.set_tests_results()
-        self.labels =[label["name"] for label in info["labels"]]
+        self.set_tests_results()
+        self.set_labels(info["labels"])
         self.changes = { "commits": info["commits"],
                          "additions": info["additions"],
                          "deletions": info["deletions"]
@@ -112,12 +122,38 @@ class PullRequest():
                 "association": association
             }
         })
+    def set_labels(self, info):
+        self.labels = []
+        self.labels_info = {}
+        for label in info:
+            self.labels.append(label["name"])
+            self.labels_info.update({label["name"] : {
+                       "color": label["color"],
+                        "description": label["description"],
+                        "url": label["url"]
+                }
+            })
     def set_tests_results(self):
-        results = Counter()
+        self.statuses = Counter()
         tests = self.session.get(self.link+"/status/"+self.last_commit).json()
+        self.tests = {}
+        self.tests_info = {}
         for test in tests["statuses"]:
-            results.update([test["state"]])
-        return results
+            test_status = {"context": test["context"],
+                           "url": test["target_url"],
+                           "description": test["description"],
+                           "updated_at": test["updated_at"]
+                           }
+            self.statuses.update([test["state"]])
+            if test["state"] in self.tests.keys():
+                self.tests[test["state"]].append(test_status)
+            else:
+                self.tests[test["state"]] = [test_status]
+            self.tests_info.update({test["context"]: {
+                    "url": test["target_url"],
+                    "description": test["description"],
+                }
+            })
     def set_last_comment(self):
         comments = self.session.get(
                                     self.link+"/issues/"+self.number+'/comments'
@@ -221,18 +257,18 @@ class PullRequest():
         return "[{}] {}".format(self.number, self.title)
     def get_statuses(self):
         return self.statuses
+    def get_tests(self):
+        return self.tests
     def get_last_update(self):
-        return self.last_updated
+        return datetime.strptime(self.last_updated, "%Y-%m-%dT%H:%M:%SZ")
     def get_created(self):
-        return self.created
+        return datetime.strptime(self.created, "%Y-%m-%dT%H:%M:%SZ")
     def get_description(self):
         return self.description
     def get_labels(self):
         return self.labels
     def get_changes(self):
         return self.changes
-    def get_people(self):
-        return self.people
     def get_reviewed_by(self):
         return self.reviewed_by
     def get_approved_by(self):
@@ -245,3 +281,9 @@ class PullRequest():
         return self.last_comment
     def get_last_action(self):
         return self.last_action
+    def get_people_info(self):
+        return self.people
+    def get_labels_info(self):
+        return self.labels_info
+    def get_tests_info(self):
+        return self.tests_info

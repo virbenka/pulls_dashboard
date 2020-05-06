@@ -21,7 +21,7 @@
       <tr>
         {% set author = pull.get_login() %}
         
-          <td> Created at: {{ pull.get_created() }} </td>
+          <td> Created {{ moment(pull.get_created()).fromNow() }} </td>
         <td style="text-align:center" width="60px"> 
           <img src="{{ people[author].avatar }}" style="width:55px;height:55px;"> <br>
           {{ author }}
@@ -43,7 +43,7 @@
              {% endfor %}
         </td>
         <td> {% for elem in pull.get_labels() %}
-             {{ elem }} <br>
+             <span class="label" style="background-color: #{{ labels[elem].color }};">{{ elem }} </span>  <br>
              {% endfor %}
         </td>
         <td> {% set changes = pull.get_changes() %}  
@@ -65,7 +65,7 @@
                   {% else %}
                     <img src="{{ people[action.person].avatar }}" style="width:55px;height:55px;"> {{ action.event }}
                   {% endif %}
-                  <br> {{ pull.get_last_update() }} 
+                  <br> {{ moment(pull.get_last_update()).fromNow() }} 
                 {% endif %}
         </td>
 
