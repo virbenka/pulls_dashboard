@@ -2,7 +2,7 @@
 
 {% block app_content %}
   <h1>Dashboard for pull requests of <a href="{{ ''.join([repo_link]) }}" > {{ repo_link }} </a></h1>
-  <table class="table table-hover">
+  <table class="table table-bordered">
   <thead>
     <tr>
       <th>Time</th>
@@ -11,8 +11,8 @@
       <th>Status</th>
       <th>Labels</th>
       <th>Changes</th>
-      <th>Reviewed by</th>
-      <th>Approved by</th>
+      <th>Reviewed</th>
+      <th>Approved</th>
       <th>Last event</th>
     </tr>
   </thead>
@@ -21,7 +21,7 @@
       <tr>
         {% set author = pull.get_login() %}
         
-          <td> Created {{ moment(pull.get_created()).fromNow() }} </td>
+        <td> Created {{ moment(pull.get_created()).fromNow() }} </td>
         <td style="text-align:center" width="60px"> 
           <img src="{{ people[author].avatar }}" style="width:55px;height:55px;"> <br>
           {{ author }}
@@ -32,15 +32,98 @@
                 Show description 
               </button>
             </p>
-            <div class="collapse" id="{{pull.get_number()}}">
+            <div class="collapse" id="{{ pull.get_number() }}">
               <div class="card card-body">
                 {{ pull.get_description() }}
               </div>
             </div>
         </td>
-        <td> {% for elem in pull.get_statuses() %}
-             {{ pull.get_statuses()[elem] }} : {{ elem }} <br>
-             {% endfor %}
+        <td> {% set statuses=pull.get_statuses() %}
+             {% set tests=pull.get_tests() %}
+             {% if "success" in statuses %}
+              <button class="btn btn-success" type="button" data-toggle="collapse" data-target="#{{pull.get_number()}}_succ" aria-expanded="false" style="width:100px;">
+              {{ statuses["success"] }} success
+                </button>
+                <div class="collapse" id="{{ pull.get_number() }}_succ">
+                  <div class="card card-body" style="overflow-y: scroll; height:200px;">
+                  <table class="table table-condensed">
+                    {% for test in tests["success"] %}
+                      <tr> 
+                        <td>
+                          {{ test.context }} 
+                          <br>
+                          <font color="grey">{{ moment(test.time).fromNow() }} </font>
+                        </td>
+                      </tr> 
+                    {% endfor %}
+                  </table>
+                  </div>
+                </div>
+              <br>
+             {% endif %}
+             {% if "pending" in statuses %}
+              <button class="btn btn-warning" type="button" data-toggle="collapse" data-target="#{{pull.get_number()}}_pend" aria-expanded="false" style="width:100px;" >
+              {{ statuses["pending"] }} pending
+                </button>
+                <div class="collapse" id="{{ pull.get_number() }}_pend">
+                  <div class="card card-body" style="overflow-y: scroll; height:200px;">
+                  <table class="table table-condensed">
+                    {% for test in tests["pending"] %}
+                      <tr> 
+                        <td>
+                          {{ test.context }} 
+                          <br>
+                          <font color="grey">{{ moment(test.time).fromNow() }} </font>
+                        </td>
+                      </tr> 
+                    {% endfor %}
+                  </table>
+                  </div>
+                </div>
+              <br>
+             {% endif %}
+             {% if "error" in statuses or "failure" in statuses %}
+              <button class="btn btn-danger" type="button" data-toggle="collapse" data-target="#{{pull.get_number()}}_err" aria-expanded="false" style="width:100px;" >
+                {% if statuses["error"] %}
+                  {% if statuses["failure"] %}
+                    {{ statuses["error"] }} error,
+                  {% else %}
+                    {{ statuses["error"] }} error
+                  {% endif %}
+                {% endif %}
+                {% if statuses["failure"] %}
+                  {{ statuses["failure"] }} failure
+                {% endif %}
+                </button>
+                <div class="collapse" id="{{ pull.get_number() }}_err">
+                  <div class="card card-body" style="overflow-y: scroll; height:200px;">
+                  <table class="table table-condensed">
+                    {% if tests["error"] %}
+                      {% for test in tests["error"] %}
+                        <tr> 
+                          <td>
+                            {{ test.context }} 
+                            <br>
+                            <font color="grey">{{ moment(test.time).fromNow() }} </font>
+                          </td>
+                        </tr> 
+                      {% endfor %}
+                    {% endif %}
+                    {% if tests["failure"] %}
+                      {% for test in tests["failure"] %}
+                        <tr> 
+                          <td>
+                            {{ test.context }} 
+                            <br>
+                            <font color="grey">{{ moment(test.time).fromNow() }} </font>
+                          </td>
+                        </tr> 
+                      {% endfor %}
+                    {% endif %}
+                  </table>
+                  </div>
+                </div>
+             {% endif %}
         </td>
         <td> {% for elem in pull.get_labels() %}
              <span class="label" style="background-color: #{{ labels[elem].color }};">{{ elem }} </span>  <br>
@@ -50,10 +133,15 @@
              {{ changes.commits }} commits created <br>
              {{ changes.additions }} lines addes <br>
              {{ changes.deletions }} lines deleted <br>
+             <div class="progress">
+              <div class="progress-bar" role="progressbar" style="width: 25%;" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">25%</div>
+            </div>
+
         </td>
         <td> {% for person in pull.get_reviewed_by() %}
              <img src="{{ people[person].avatar }}" style="width:55px;height:55px;"> 
              {% endfor %}
+        </td>
         <td> {% for person in pull.get_approved_by() %}
              <img src="{{ people[person].avatar }}" style="width:55px;height:55px;"> 
              {% endfor %}

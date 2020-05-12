@@ -34,13 +34,14 @@ class RepoDetails():
         self.session = create_requests_session()
         self.link = "https://github.com/{}/{}".format(owner, name)
         self.dev_link = "https://api.github.com/repos/{}/{}".format(owner, name)
-        self.response = self.session.get(self.dev_link+'/pulls?state=open')
+        self.response = self.session.get(self.dev_link+'/pulls?state=open&per_page=20')
         if self.response:
             self.response = self.response.json()
             self.people = {}
             self.labels = {}
             self.tests = {}
             self.threads = []
+            self.max_changes = 1
             self.set_requests()
     def validate_repo(self):
         return self.response
@@ -52,6 +53,7 @@ class RepoDetails():
         self.people.update(pull.get_people_info())
         self.labels.update(pull.get_labels_info())
         self.tests.update(pull.get_tests_info())
+        self.update_changes_info(pull.get_changes())
     def set_requests(self):
         response = self.response
         print(len(response))
@@ -75,6 +77,8 @@ class RepoDetails():
                 pull_thread.join(timeout=3)
                 print(pull_thread.is_alive())
         self.sort_by_time()
+    def update_changes_info(self, changes):
+        self.max_changes = max(self.max_changes, changes["additions"]+changes["deletions"])
     def get_requests(self):
         return self.pull_requests
     def get_people(self):
@@ -83,6 +87,8 @@ class RepoDetails():
         return self.labels
     def get_tests(self):
         return self.tests
+    def get_max_changes(self):
+        return self.max_changes
     def sort_by_time(self):
         self.pull_requests = sorted(self.pull_requests, key=lambda x: \
                                     x.get_last_update(), reverse=True)
@@ -142,7 +148,7 @@ class PullRequest():
             test_status = {"context": test["context"],
                            "url": test["target_url"],
                            "description": test["description"],
-                           "updated_at": test["updated_at"]
+                           "time": datetime.strptime(test["updated_at"], "%Y-%m-%dT%H:%M:%SZ")
                            }
             self.statuses.update([test["state"]])
             if test["state"] in self.tests.keys():
@@ -244,46 +250,48 @@ class PullRequest():
                 self.last_action = "commited"
             elif self.last_action["diff"] == float("inf"):
                 self.last_action = {}
+
     @staticmethod
     def time(time):
         return int(''.join(x for x in time if x.isdigit()))
-    def get_number(self):
-        return str(self.number)
-    def get_login(self):
-        return self.login
+
+    def get_approved_by(self):
+        return self.approved
     def get_avatar(self):
         return self.avatar
-    def get_title(self):
-        return "[{}] {}".format(self.number, self.title)
-    def get_statuses(self):
-        return self.statuses
-    def get_tests(self):
-        return self.tests
-    def get_last_update(self):
-        return datetime.strptime(self.last_updated, "%Y-%m-%dT%H:%M:%SZ")
+    def get_changes(self):
+        return self.changes
+    def get_comments_number(self):
+        return self.comments_number
     def get_created(self):
         return datetime.strptime(self.created, "%Y-%m-%dT%H:%M:%SZ")
     def get_description(self):
         return self.description
     def get_labels(self):
         return self.labels
-    def get_changes(self):
-        return self.changes
-    def get_reviewed_by(self):
-        return self.reviewed_by
-    def get_approved_by(self):
-        return self.approved
-    def get_last_review(self):
-        return self.last_review
-    def get_comments_number(self):
-        return self.comments_number
-    def get_last_comment(self):
-        return self.last_comment
-    def get_last_action(self):
-        return self.last_action
-    def get_people_info(self):
-        return self.people
     def get_labels_info(self):
         return self.labels_info
+    def get_last_action(self):
+        return self.last_action
+    def get_last_comment(self):
+        return self.last_comment
+    def get_last_review(self):
+        return self.last_review
+    def get_last_update(self):
+        return datetime.strptime(self.last_updated, "%Y-%m-%dT%H:%M:%SZ")
+    def get_login(self):
+        return self.login
+    def get_number(self):
+        return str(self.number)
+    def get_people_info(self):
+        return self.people
+    def get_reviewed_by(self):
+        return self.reviewed_by
+    def get_statuses(self):
+        return self.statuses
+    def get_tests(self):
+        return self.tests
     def get_tests_info(self):
         return self.tests_info
+    def get_title(self):
+        return "[{}] {}".format(self.number, self.title)
