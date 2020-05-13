@@ -20,9 +20,10 @@ def create_dashboard(owner, name):
         people = repo.get_people()
         labels = repo.get_labels()
         tests = repo.get_tests()
+        max_changes = repo.get_max_changes()
         return render_template('dashboard.html', title='Dashboard',
                                text="lalalla", repo_link=repo_link, pull_requests=pull_requests,
-                               people=people, labels=labels, tests=tests)
+                               people=people, labels=labels, tests=tests, max_changes=max_changes)
     else:
         flash("This repository doesn't exist")
         return redirect(url_for('choice'))

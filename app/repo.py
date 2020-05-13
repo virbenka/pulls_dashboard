@@ -1,5 +1,6 @@
 import copy
 import functools
+import math
 import requests
 import threading
 
@@ -34,14 +35,14 @@ class RepoDetails():
         self.session = create_requests_session()
         self.link = "https://github.com/{}/{}".format(owner, name)
         self.dev_link = "https://api.github.com/repos/{}/{}".format(owner, name)
-        self.response = self.session.get(self.dev_link+'/pulls?state=open&per_page=20')
+        self.response = self.session.get(self.dev_link+'/pulls?state=open&per_page=10')
         if self.response:
             self.response = self.response.json()
             self.people = {}
             self.labels = {}
             self.tests = {}
             self.threads = []
-            self.max_changes = 1
+            self.max_changes = 0
             self.set_requests()
     def validate_repo(self):
         return self.response
@@ -78,7 +79,7 @@ class RepoDetails():
                 print(pull_thread.is_alive())
         self.sort_by_time()
     def update_changes_info(self, changes):
-        self.max_changes = max(self.max_changes, changes["additions"]+changes["deletions"])
+        self.max_changes = max(self.max_changes, changes["log"])
     def get_requests(self):
         return self.pull_requests
     def get_people(self):
@@ -112,7 +113,9 @@ class PullRequest():
         self.set_labels(info["labels"])
         self.changes = { "commits": info["commits"],
                          "additions": info["additions"],
-                         "deletions": info["deletions"]
+                         "deletions": info["deletions"],
+                         "total": int(info["additions"])+int(info["deletions"]),
+                         "log": math.log(int(info["additions"])+int(info["deletions"]))
                         }
         self.comments_number = 0
         self.set_last_comment()
