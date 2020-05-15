@@ -23,13 +23,15 @@ def create_dashboard(owner, name):
     else:
         print("AKLALALA")
         print(settings)
-        repo.sort(settings["sort_type"])
         repo_link = repo.get_link()
         pull_requests = repo.get_requests()
         people = repo.get_people()
         labels = repo.get_labels()
         tests = repo.get_tests()
         max_changes = repo.get_max_changes()
+        print("finished")
+
+
         return render_template('dashboard.html', owner=owner, name = name, title='Dashboard',
                                 repo_link=repo_link, pull_requests=pull_requests,
                                 people=people, labels=labels, tests=tests, max_changes=max_changes, settings=1)

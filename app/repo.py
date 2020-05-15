@@ -35,7 +35,7 @@ class RepoDetails():
         self.session = create_requests_session()
         self.link = "https://github.com/{}/{}".format(owner, name)
         self.dev_link = "https://api.github.com/repos/{}/{}".format(owner, name)
-        self.response = self.session.get(self.dev_link+'/pulls?state=open&per_page=4')
+        self.response = self.session.get(self.dev_link+'/pulls?state=open&per_page=100')
         if self.response:
             self.response = self.response.json()
             self.people = {}
@@ -43,7 +43,10 @@ class RepoDetails():
             self.tests = {}
             self.threads = []
             self.max_changes = 0
+            self.done = threading.Event()
+            self.all_ = False
             self.set_requests()
+
     def validate_repo(self):
         return self.response
     def get_link(self):
@@ -77,9 +80,18 @@ class RepoDetails():
                 pull_thread.start()
                 pull_thread.join(timeout=3)
                 print(pull_thread.is_alive())
+        self.all_= True
+
+        self.done.set()
     def update_changes_info(self, changes):
         self.max_changes = max(self.max_changes, changes["log"])
+    def is_done(self):
+        return self.done
     def get_requests(self):
+        self.done.wait()
+        while not self.all_:
+            a = 0;
+
         return self.pull_requests
     def get_people(self):
         return self.people
@@ -129,6 +141,16 @@ class PullRequest():
         self.set_reviews_details()
         self.set_last_action()
         #self.last_action = self.set_last_action(dev_link)
+    def __repr__(self):
+        return "pull number {}".format(self.number)
+    def __eq__(self, other):
+        if isinstance(other, PullRequest):
+            return self.number == other.number
+        else:
+            return False
+    def __hash__(self):
+        return hash(self.__repr__())
+
     def update_people(self, login, avatar, association):
         if association == "NONE":
             association = ""
@@ -219,10 +241,8 @@ class PullRequest():
             if reviews[-1]["user"]["login"] == self.login and self.last_comment \
                 and self.time(reviews[-1]["submitted_at"]) > \
                 self.time(self.last_comment["time"]):
-                    print("TUT")
                     text = self.session.get(self.link+"/pulls/"+self.number+
                                                 "/comments")
-                    print(text)
                     text = text.json()[-1]["body"]
                     self.last_comment = {"person": review["user"]["login"],
                                         "time": review["submitted_at"],
