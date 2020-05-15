@@ -35,7 +35,7 @@ class RepoDetails():
         self.session = create_requests_session()
         self.link = "https://github.com/{}/{}".format(owner, name)
         self.dev_link = "https://api.github.com/repos/{}/{}".format(owner, name)
-        self.response = self.session.get(self.dev_link+'/pulls?state=open&per_page=10')
+        self.response = self.session.get(self.dev_link+'/pulls?state=open&per_page=4')
         if self.response:
             self.response = self.response.json()
             self.people = {}
@@ -77,7 +77,6 @@ class RepoDetails():
                 pull_thread.start()
                 pull_thread.join(timeout=3)
                 print(pull_thread.is_alive())
-        self.sort_by_time()
     def update_changes_info(self, changes):
         self.max_changes = max(self.max_changes, changes["log"])
     def get_requests(self):
@@ -90,9 +89,21 @@ class RepoDetails():
         return self.tests
     def get_max_changes(self):
         return self.max_changes
-    def sort_by_time(self):
-        self.pull_requests = sorted(self.pull_requests, key=lambda x: \
-                                    x.get_last_update(), reverse=True)
+    def sort(self, option="updated"):
+        if option == "created":
+            self.pull_requests = sorted(self.pull_requests, key=lambda x: \
+                                        x.get_created(), reverse=True)
+        elif option == "updated":
+            self.pull_requests = sorted(self.pull_requests, key=lambda x: \
+                                        x.get_last_update(), reverse=True)
+        elif option == "tests":
+            self.pull_requests = sorted(self.pull_requests, key=lambda x: \
+                                        x.get_statuses()["success"], reverse=True)
+        else:
+            self.pull_requests = sorted(self.pull_requests, key=lambda x: \
+                                        x.get_changes()["total"], reverse=True)
+
+
 
 class PullRequest():
     def __init__ (self, data, dev_link, session):
@@ -111,12 +122,7 @@ class PullRequest():
         self.last_commit = info['statuses_url'].split('/')[-1]
         self.set_tests_results()
         self.set_labels(info["labels"])
-        self.changes = { "commits": info["commits"],
-                         "additions": info["additions"],
-                         "deletions": info["deletions"],
-                         "total": int(info["additions"])+int(info["deletions"]),
-                         "log": math.log(int(info["additions"])+int(info["deletions"]))
-                        }
+        self.set_changes(info)
         self.comments_number = 0
         self.set_last_comment()
         self.set_last_event()
@@ -131,6 +137,16 @@ class PullRequest():
                 "association": association
             }
         })
+    def set_changes(self, info):
+        self.changes = { "commits": info["commits"],
+                         "additions": info["additions"],
+                         "deletions": info["deletions"],
+                         "total": int(info["additions"])+int(info["deletions"]),
+                        }
+        if self.changes["total"] > 0:
+            self.changes.update({"log": math.log(int(info["additions"])+int(info["deletions"]))})
+        else:
+            self.changes.update({"log": 0})
     def set_labels(self, info):
         self.labels = []
         self.labels_info = {}
@@ -298,3 +314,4 @@ class PullRequest():
         return self.tests_info
     def get_title(self):
         return "[{}] {}".format(self.number, self.title)
+

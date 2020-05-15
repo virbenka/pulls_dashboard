@@ -6,3 +6,4 @@ class Config(object):
     REQUEST_RETRIES = 3
     REQUEST_TIMEOUT = 4
     ACCEPT_HEADER = "application/vnd.github.antiope-preview+json"
+    SETTINGS = {"sort_type": "updated"}

@@ -1,16 +1,17 @@
 {% extends "base.html" %}
 
 {% block app_content %}
+
+
   <h1>Dashboard for pull requests of <a href="{{ ''.join([repo_link]) }}" > {{ repo_link }} </a></h1>
-  <table class="table table-bordered" style="width:100%">
+  <table class="table table-bordered" style="width:1200px;">
   <thead>
     <tr>
-      <th style="text-align:center">Time</th>
       <th style="text-align:center">Author</th>
-      <th style="text-align:center">Title</th>
-      <th style="width:20%">Status</th>
+      <th style="text-align:center;table-layout: fixed;">Title</th>
+      <th style="text-align:center;widh:180px">Status</th>
       <th style="text-align:center">Labels</th>
-      <th style="text-align:center">Changes</th>
+      <th style="text-align:center; width:250px;">Changes</th>
       <th style="text-align:center">Reviewed</th>
       <th style="text-align:center">Approved</th>
       <th style="text-align:center">Last event</th>
@@ -23,28 +24,27 @@
       <tr>
         {% set author = pull.get_login() %}
         
-        <td> Created {{ moment(pull.get_created()).fromNow() }} </td>
         <td style="text-align:center"> 
           <img src="{{ people[author].avatar }}" style="width:55px;height:55px;"> <br>
-          {{ author }}
-          <br> {{ people[author].association }} 
+          <b> {{ author }} </b>
+          <br> <font color="navy"> {{ people[author].association }} </font> 
         </td>
-        <td style="text-align:center">{{ pull.get_title() }} 
-          <p>
+        <td style="text-align:center;overflow:hidden;width:280px;">  <p style="width:280px;text-align:center;"> {{ pull.get_title() }} </p>
+          <p> <font color="grey"> Created {{ moment(pull.get_created()).fromNow() }} </font>  </p><p>
           <button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#{{pull.get_number()}}" aria-expanded="false" >
                 Show description 
               </button>
             </p>
             <div class="collapse" id="{{ pull.get_number() }}">
               <div class="card card-body">
-                {{ pull.get_description() }}
+                <p style="text-align:center; width:280px;"> {{ pull.get_description() }} </p>
               </div>
             </div>
         </td>
         <td> {% set statuses=pull.get_statuses() %}
              {% set tests=pull.get_tests() %}
              {% if "success" in statuses %}
-              <button class="btn btn-success" type="button" data-toggle="collapse" data-target="#{{pull.get_number()}}_succ" aria-expanded="false" style="width:100px;">
+              <button class="btn btn-success" type="button" data-toggle="collapse" data-target="#{{pull.get_number()}}_succ" aria-expanded="false" style="width:135px;">
               {{ statuses["success"] }} success
                 </button>
                 <div class="collapse" id="{{ pull.get_number() }}_succ">
@@ -65,7 +65,7 @@
               <br>
              {% endif %}
              {% if "pending" in statuses %}
-              <button class="btn btn-warning" type="button" data-toggle="collapse" data-target="#{{pull.get_number()}}_pend" aria-expanded="false" style="width:100px;" >
+              <button class="btn btn-warning" type="button" data-toggle="collapse" data-target="#{{pull.get_number()}}_pend" aria-expanded="false" style="width:135px;" >
               {{ statuses["pending"] }} pending
                 </button>
                 <div class="collapse" id="{{ pull.get_number() }}_pend">
@@ -86,7 +86,7 @@
               <br>
              {% endif %}
              {% if "error" in statuses or "failure" in statuses %}
-              <button class="btn btn-danger" type="button" data-toggle="collapse" data-target="#{{pull.get_number()}}_err" aria-expanded="false" style="width:100px;" >
+              <button class="btn btn-danger" type="button" data-toggle="collapse" data-target="#{{pull.get_number()}}_err" aria-expanded="false" style="width:135px;" >
                 {% if statuses["error"] %}
                   {% if statuses["failure"] %}
                     {{ statuses["error"] }} error,
@@ -132,14 +132,18 @@
              <span class="label" style="background-color: #{{ labels[elem].color }};">{{ elem }} </span>  <br>
              {% endfor %}
         </td>
-        <td> {% set changes = pull.get_changes() %}  
+        <td style="text-align:center; width:230px;"> {% set changes = pull.get_changes() %}  
              {{ changes.commits }} commits created <br>
-             {{ changes.additions }} lines addes <br>
-             {{ changes.deletions }} lines deleted <br>
-             {% set len=changes.log/max_changes*100 %}
-             {% set additions=(changes.additions/changes.total)*len %}
-             {% set deletions=(changes.deletions/changes.total)*len %}
-             <div class="progress">
+             lines: + {{ changes.additions }}, - {{ changes.deletions }}<br>
+             {% if max_changes > 0 and changes.total > 0 %}
+              {% set len=changes.log/max_changes*100 %}
+              {% set additions=(changes.additions/changes.total)*len %}
+              {% set deletions=(changes.deletions/changes.total)*len %}
+             {% else %}
+              {% set additions = 0 %}
+              {% set deletions = 0 %}
+             {% endif %}
+             <div class="progress" style="text-align:center; width:230px;">
                <div class="progress-bar progress-bar-success" style="width: {{ additions }}%">
                  <span class="sr-only"> {{ changes.additions }} lines added </span>
                </div>
@@ -157,20 +161,22 @@
              <img src="{{ people[person].avatar }}" style="width:55px;height:55px;"> 
              {% endfor %}
         </td>
-        <td> {% set action = pull.get_last_action() %}
+        <td style="text-align:center;"> {% set action = pull.get_last_action() %}
                 {% if action %}
+                  <img src="{{ people[author].avatar }}" style="width:55px;height:55px;"> <br>
                   {% if action == "commited" %}
-                    <img src="{{ people[author].avatar }}" style="width:55px;height:55px;"> made a commit 
+                     made a commit 
                   {% else %}
-                    <img src="{{ people[action.person].avatar }}" style="width:55px;height:55px;"> {{ action.event }}
+                     <br> {{ action.event }}
                   {% endif %}
-                  <br> {{ moment(pull.get_last_update()).fromNow() }} 
+                  <br> <font color="grey"> {{ moment(pull.get_last_update()).fromNow() }} </font>
                 {% endif %}
         </td>
 
       </tr>
     {% endfor %}
     </tbody>
+  </table>
 
 
 {% endblock %}
