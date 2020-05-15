@@ -1,6 +1,7 @@
 import copy
 import functools
 import math
+import queue
 import requests
 import threading
 
@@ -31,24 +32,39 @@ def create_requests_session():
 
 
 class RepoDetails():
-    def __init__ (self, owner, name):
+    def __init__ (self, owner, name, number):
         self.session = create_requests_session()
         self.link = "https://github.com/{}/{}".format(owner, name)
         self.dev_link = "https://api.github.com/repos/{}/{}".format(owner, name)
-        self.response = self.session.get(self.dev_link+'/pulls?state=open&per_page=100')
-        if self.response:
-            self.response = self.response.json()
-            self.people = {}
-            self.labels = {}
-            self.tests = {}
-            self.threads = []
-            self.max_changes = 0
-            self.done = threading.Event()
-            self.all_ = False
-            self.set_requests()
+        self.people = {}
+        self.labels = {}
+        self.tests = {}
+        self.threads = queue.Queue()
+        self.indexes = queue.Queue()
+        self.max_changes = 0
+        self.done = threading.Event()
+        self.validated = False
+        self.response = []
+        page = 1
+        try:
+            number = int(number)
+        except:
+            number = 500
+        self.number = number
+        while number > 0:
+            res = self.session.get(self.dev_link+'/pulls?state=open&page={}'.format(page))
+            number -= 30
+            page += 1
+            if res and res.json():
+                self.validated = True
+                self.response += res.json()
+            else:
+                break
+        self.start = datetime.now()
+        self.set_requests()
 
     def validate_repo(self):
-        return self.response
+        return self.validated
     def get_link(self):
         return self.link
     def handle_pull_request(self, elem):
@@ -60,38 +76,39 @@ class RepoDetails():
         self.update_changes_info(pull.get_changes())
     def set_requests(self):
         response = self.response
-        print(len(response))
         self.pull_requests = set()
-        i = 1
-        for elem in response:
+        for i in range(min(len(response), self.number)):
+            elem = response[i]
             pull_thread = threading.Thread(target=self.handle_pull_request, \
                                            args=[elem])
             pull_thread.daemon = True
             pull_thread.start()
-            self.threads.append(pull_thread)
-            i+=1
-        for elem in self.threads:
-            elem.join(timeout=3)
+            self.threads.put(pull_thread)
+            self.indexes.put((i, 1))
+        while not self.threads.empty():
+            elem = self.threads.get()
+            index,times = self.indexes.get()
+            elem.join(timeout=4)
+            #print(self.threads.qsize(), index, times)
             if (elem.is_alive()):
-                print("HAPPENED")
-                pull_thread = threading.Thread(target=self.handle_pull_request,
-                                               args=[self.response[self.threads.index(elem)]])
-                pull_thread.daemon = True
-                pull_thread.start()
-                pull_thread.join(timeout=3)
-                print(pull_thread.is_alive())
-        self.all_= True
+                if times < 5:
+                    print("HAPPENED")
+                    pull_thread = threading.Thread(target=self.handle_pull_request,
+                                                args=[self.response[index]])
+                    pull_thread.daemon = True
+                    pull_thread.start()
+                    self.threads.put(pull_thread)
+                    self.indexes.put((index, times+1))
+                else:
+                    print("enough")
+            #print("new elem in:", datetime.now()-self.start)
 
         self.done.set()
     def update_changes_info(self, changes):
         self.max_changes = max(self.max_changes, changes["log"])
-    def is_done(self):
-        return self.done
     def get_requests(self):
         self.done.wait()
-        while not self.all_:
-            a = 0;
-
+        self.sort("updated")
         return self.pull_requests
     def get_people(self):
         return self.people
