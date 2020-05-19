@@ -22,32 +22,32 @@
     {% set max_changes=max_changes %}
     {% for pull in pull_requests %} 
       <tr>
-        {% set author = pull.get_login() %}
+        {% set author = pull.author %}
         
         <td style="text-align:center"> 
           <img src="{{ people[author].avatar }}" style="width:55px;height:55px;"> <br>
           <b> {{ author }} </b>
           <br> <font color="navy"> {{ people[author].association }} </font> 
         </td>
-        <td style="text-align:center;overflow:hidden;width:280px;">  <p style="width:280px;text-align:center;"> {{ pull.get_title() }} </p>
-          <p> <font color="grey"> Created {{ moment(pull.get_created()).fromNow() }} </font>  </p><p>
-          <button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#{{pull.get_number()}}" aria-expanded="false" >
+        <td style="text-align:center;overflow:hidden;width:280px;">  <p style="width:280px;text-align:center;"> {{ pull.title }} </p>
+          <p> <font color="grey"> Created {{ "moment(pull.created).fromNow()" }} </font>  </p><p>
+          <button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#{{pull.number}}" aria-expanded="false" >
                 Show description 
               </button>
             </p>
-            <div class="collapse" id="{{ pull.get_number() }}">
+            <div class="collapse" id="{{ pull.number }}">
               <div class="card card-body">
-                <p style="text-align:center; width:280px;"> {{ pull.get_description() }} </p>
+                <p style="text-align:center; width:280px;"> {{ pull.description }} </p>
               </div>
             </div>
         </td>
-        <td> {% set statuses=pull.get_statuses() %}
-             {% set tests=pull.get_tests() %}
+        <td> {% set statuses=pull.statuses %}
+             {% set tests=pull.tests %}
              {% if "success" in statuses %}
-              <button class="btn btn-success" type="button" data-toggle="collapse" data-target="#{{pull.get_number()}}_succ" aria-expanded="false" style="width:135px;">
+              <button class="btn btn-success" type="button" data-toggle="collapse" data-target="#{{pull.number}}_succ" aria-expanded="false" style="width:135px;">
               {{ statuses["success"] }} success
                 </button>
-                <div class="collapse" id="{{ pull.get_number() }}_succ">
+                <div class="collapse" id="{{ pull.number }}_succ">
                   <div class="card card-body" style="overflow-y: scroll; height:200px;">
                   <table class="table table-condensed">
                     {% for test in tests["success"] %}
@@ -55,7 +55,7 @@
                         <td>
                           {{ test.context }} 
                           <br>
-                          <font color="grey">{{ moment(test.time).fromNow() }} </font>
+                          <font color="grey">{{" moment(test.time).fromNow()" }} </font>
                         </td>
                       </tr> 
                     {% endfor %}
@@ -65,10 +65,10 @@
               <br>
              {% endif %}
              {% if "pending" in statuses %}
-              <button class="btn btn-warning" type="button" data-toggle="collapse" data-target="#{{pull.get_number()}}_pend" aria-expanded="false" style="width:135px;" >
+              <button class="btn btn-warning" type="button" data-toggle="collapse" data-target="#{{pull.number}}_pend" aria-expanded="false" style="width:135px;" >
               {{ statuses["pending"] }} pending
                 </button>
-                <div class="collapse" id="{{ pull.get_number() }}_pend">
+                <div class="collapse" id="{{ pull.number }}_pend">
                   <div class="card card-body" style="overflow-y: scroll; height:200px;">
                   <table class="table table-condensed">
                     {% for test in tests["pending"] %}
@@ -76,7 +76,7 @@
                         <td>
                           {{ test.context }} 
                           <br>
-                          <font color="grey">{{ moment(test.time).fromNow() }} </font>
+                          <font color="grey">{{ "moment(test.time).fromNow()" }} </font>
                         </td>
                       </tr> 
                     {% endfor %}
@@ -86,7 +86,7 @@
               <br>
              {% endif %}
              {% if "error" in statuses or "failure" in statuses %}
-              <button class="btn btn-danger" type="button" data-toggle="collapse" data-target="#{{pull.get_number()}}_err" aria-expanded="false" style="width:135px;" >
+              <button class="btn btn-danger" type="button" data-toggle="collapse" data-target="#{{pull.number}}_err" aria-expanded="false" style="width:135px;" >
                 {% if statuses["error"] %}
                   {% if statuses["failure"] %}
                     {{ statuses["error"] }} error,
@@ -98,7 +98,7 @@
                   {{ statuses["failure"] }} failure
                 {% endif %}
                 </button>
-                <div class="collapse" id="{{ pull.get_number() }}_err">
+                <div class="collapse" id="{{ pull.number }}_err">
                   <div class="card card-body" style="overflow-y: scroll; height:200px;">
                   <table class="table table-condensed">
                     {% if tests["error"] %}
@@ -107,7 +107,7 @@
                           <td>
                             {{ test.context }} 
                             <br>
-                            <font color="grey">{{ moment(test.time).fromNow() }} </font>
+                            <font color="grey">{{ "moment(test.time).fromNow()" }} </font>
                           </td>
                         </tr> 
                       {% endfor %}
@@ -118,7 +118,7 @@
                           <td>
                             {{ test.context }} 
                             <br>
-                            <font color="grey">{{ moment(test.time).fromNow() }} </font>
+                            <font color="grey">{{ "moment(test.time).fromNow()" }} </font>
                           </td>
                         </tr> 
                       {% endfor %}
@@ -128,11 +128,11 @@
                 </div>
              {% endif %}
         </td>
-        <td> {% for elem in pull.get_labels() %}
+        <td> {% for elem in pull.labels %}
              <span class="label" style="background-color: #{{ labels[elem].color }};">{{ elem }} </span>  <br>
              {% endfor %}
         </td>
-        <td style="text-align:center; width:230px;"> {% set changes = pull.get_changes() %}  
+        <td style="text-align:center; width:230px;"> {% set changes = pull.changes %}  
              {{ changes.commits }} commits created <br>
              lines: + {{ changes.additions }}, - {{ changes.deletions }}<br>
              {% if max_changes > 0 and changes.total > 0 %}
@@ -153,15 +153,15 @@
              </div>
 
         </td>
-        <td> {% for person in pull.get_reviewed_by() %}
+        <td> {% for person in pull.reviewed %}
              <img src="{{ people[person].avatar }}" style="width:55px;height:55px;"> 
              {% endfor %}
         </td>
-        <td> {% for person in pull.get_approved_by() %}
+        <td> {% for person in pull.approved %}
              <img src="{{ people[person].avatar }}" style="width:55px;height:55px;"> 
              {% endfor %}
         </td>
-        <td style="text-align:center;"> {% set action = pull.get_last_action() %}
+        <td style="text-align:center;"> {% set action = pull.last_action %}
                 {% if action %}
                   <img src="{{ people[author].avatar }}" style="width:55px;height:55px;"> <br>
                   {% if action == "commited" %}
@@ -169,7 +169,7 @@
                   {% else %}
                      <br> {{ action.event }}
                   {% endif %}
-                  <br> <font color="grey"> {{ moment(pull.get_last_update()).fromNow() }} </font>
+                  <br> <font color="grey"> {{ "moment(pull.last_update).fromNow()" }} </font>
                 {% endif %}
         </td>
 

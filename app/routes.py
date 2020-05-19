@@ -1,7 +1,10 @@
+from datetime import datetime
 from flask import render_template, flash, redirect, url_for, request
+
 from app import app
 from app.forms import RepoChoice, DashboardSettings
-from app.repo import RepoDetails, PullRequest
+from app.models import Repos, Pulls
+from app.repo import RepoInfoCollection, PullRequest
 
 global settings
 global repo
@@ -20,21 +23,20 @@ def choice():
 @app.route('/dashboard/<owner>/<name>', methods=['GET', 'POST'])
 def create_dashboard(owner, name):
     number = request.args.get('number')
-    repo = RepoDetails(owner, name, number)
-    if not repo.validate_repo():
-        flash("This repository doesn't exist")
-        return redirect(url_for('choice'))
-    else:
-        repo_link = repo.get_link()
-        pull_requests = repo.get_requests()
-        people = repo.get_people()
-        labels = repo.get_labels()
-        tests = repo.get_tests()
-        max_changes = repo.get_max_changes()
-        return render_template('dashboard.html', owner=owner, name = name, title='Dashboard',
-                                repo_link=repo_link, pull_requests=pull_requests,
-                                people=people, labels=labels, tests=tests, max_changes=max_changes, settings=1)
-
+    link = "https://github.com/{}/{}".format(owner, name)
+    if not Repos().repo_exists(owner, name):
+        repo = RepoInfoCollection(owner, name, number)
+        if not repo.validate_repo():
+            flash("This repository doesn't exist")
+            return redirect(url_for('choice'))
+        else:
+            print("created @route")
+    print("exists @route")
+    pulls = [elem for elem in Pulls(link).get_current_pulls().values()]
+    people, labels, tests, max_changes = Repos(link).get_general_info()
+    return render_template('dashboard.html', repo_link=link, owner=owner, name=name, title="Dashboard",
+                            people=people, labels=labels, tests=tests, max_changes=max_changes,
+                            pull_requests=pulls, settings=1)
 @app.route('/dashboard/<owner>/<name>/settings', methods=['GET', 'POST'])
 def dashboard_settings(owner, name):
     form = DashboardSettings()
@@ -45,3 +47,19 @@ def dashboard_settings(owner, name):
         print("Validation Failed")
         print(form.errors)
     return render_template('settings.html', title='Settings', form=form)
+
+@app.route('/task')
+def task():
+    x = datetime.now()
+    for repo in Repos().get_repos_names():
+        owner = repo[0]
+        name = repo[1]
+        used = repo[2]
+        link = repo[3]
+        if (datetime.now() - used).days > 15:
+            Repos(link).delete_info()
+        else:
+            RepoInfoCollection(owner, name, 2)
+    print(datetime.now()-x)
+    return redirect(url_for('choice'))
+

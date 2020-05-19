@@ -1,0 +1,2 @@
+wget http://localhost/task
+
