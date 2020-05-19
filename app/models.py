@@ -7,7 +7,7 @@ from pymongo import MongoClient
 from app import app
 
 cluster = pymongo.MongoClient(app.config["MONGODB_URI"])
-db = cluster["pulls_dashboard"]
+db = cluster["heroku_q7dx960h"]
 
 class People():
     def __init__(self, link):
