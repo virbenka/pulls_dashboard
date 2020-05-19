@@ -36,6 +36,7 @@ def create_requests_session():
 
 class RepoInfoCollection():
     def __init__ (self, owner, name, number):
+        print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
         self.session = create_requests_session()
         self.link = "https://github.com/{}/{}".format(owner, name)
         self.dev_link = "https://api.github.com/repos/{}/{}".format(owner, name)
@@ -135,10 +136,13 @@ class RepoInfoCollection():
                                self.prev_people, self.prev_labels, self.prev_tests)
         self.pull_requests.add(pull)
         if pull.get_if_pull_changed():
+            print("it did")
             info = pull.get_all_info()
-            if pull.get_if_only_etag_changed:
+            if pull.get_if_only_etag_changed():
+                print("etag onlu")
                 self.pulls_db.update_pull_etag(info)
             else:
+                print("it all")
                 self.pulls_db.update_pull(info)
         self.people.update(pull.get_people_info())
         self.labels.update(pull.get_labels_info())
@@ -222,7 +226,8 @@ class PullRequest():
         self.changes_num = self.current_info["changes"]["log"]
         self.changed = not (self.current_info == saved_info)
         saved_info["etag"] = self.current_info["etag"]
-        self.only_etag_changed = not (self.current_info == saved_info)
+        print(self.current_info == saved_info)
+        self.only_etag_changed = (self.current_info == saved_info)
     def __repr__(self):
         return "pull number {}".format(self.number)
     def __eq__(self, other):

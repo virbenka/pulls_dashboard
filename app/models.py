@@ -1,9 +1,12 @@
 import pymongo
+
 from copy import copy
 from datetime import datetime
 from pymongo import MongoClient
 
-cluster = pymongo.MongoClient("mongodb+srv://liza:liza@cluster0-yrumc.mongodb.net/test?retryWrites=true&w=majority")
+from app import app
+
+cluster = pymongo.MongoClient(app.config["MONGODB_URI"])
 db = cluster["pulls_dashboard"]
 
 class People():
@@ -149,7 +152,10 @@ class Repos():
         people = People(self.link).get_people()
         labels = Labels(self.link).get_labels()
         tests = Tests(self.link).get_tests()
-        max_changes = self.collection.find_one(self.info)["changes_num"]
+        max_changes = 0
+        res = self.collection.find_one(self.info)
+        if "changes_num" in res.keys():
+            max_changes = res["changes_num"]
         return people, labels, tests, max_changes
     def delete_info(self):
         self.collection.delete_one(self.info)

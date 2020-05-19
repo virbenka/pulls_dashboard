@@ -52,15 +52,19 @@ def dashboard_settings(owner, name):
 def task():
     x = datetime.now()
     print(x)
+    print("ISFAOIOSAFSAIFOSAIOAIOI")
     for repo in Repos().get_repos_names():
+        print("here we go")
         owner = repo[0]
         name = repo[1]
         used = repo[2]
         link = repo[3]
         print("got info")
+        print("OWNER:", owner)
         if (datetime.now() - used).days > 15:
             Repos(link).delete_info()
         else:
+            print("GOING GAGAGA")
             print("going")
             RepoInfoCollection(owner, name, 2)
     print(datetime.now()-x)
