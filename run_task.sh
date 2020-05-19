@@ -1,2 +1,2 @@
-wget http://localhost/task
+wget http://localhost:5000/task
 

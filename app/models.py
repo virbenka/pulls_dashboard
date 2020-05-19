@@ -16,23 +16,14 @@ class People():
     def update_people(self, people):
         for person in people:
             person = people[person]
-            person.update({"repo_link": self.link})
-            if not person["association"]:
-                info = self.collection.find_one(
-                    {"name": person["name"],
-                     "repo_link": self.link
-                    }
-                )
-                if info and info["association"]:
-                    continue
-            if not self.collection.find_one(person):
-                self.collection.find_one_and_replace({"name": person["name"],
-                                                      "repo_link": self.link},
-                                                       person, upsert=True)
+            self.collection.find_one_and_replace({"name": person["name"],
+                                                   "repo_link": self.link},
+                                                   person, upsert=True)
     def get_people(self):
         info = self.collection.find({"repo_link": self.link})
         res = {}
         for elem in info:
+            elem.pop('_id')
             res.update({elem["name"]: elem})
         return res
 
@@ -46,15 +37,14 @@ class Labels():
     def update_labels(self, labels):
         for label in labels:
             label = labels[label]
-            label.update({"repo_link": self.link})
-            if not self.collection.find_one(label):
-                self.collection.find_one_and_replace({"name": label["name"],
-                                                      "repo_link": self.link},
-                                                       label, upsert=True)
+            self.collection.find_one_and_replace({"name": label["name"],
+                                                  "repo_link": self.link},
+                                                   label, upsert=True)
     def get_labels(self):
         info = self.collection.find({"repo_link": self.link})
         res = {}
         for elem in info:
+            elem.pop('_id')
             res.update({elem["name"]: elem})
         return res
 
@@ -68,15 +58,14 @@ class Tests():
     def update_tests(self, tests):
         for test in tests:
             test = tests[test]
-            test.update({"repo_link": self.link})
-            if not self.collection.find_one(test):
-                self.collection.find_one_and_replace({"name": test["name"],
-                                                      "repo_link": self.link},
-                                                       test, upsert=True)
+            self.collection.find_one_and_replace({"name": test["name"],
+                                                  "repo_link": self.link},
+                                                   test, upsert=True)
     def get_tests(self):
         info = self.collection.find({"repo_link": self.link})
         res = {}
         for elem in info:
+            elem.pop('_id')
             res.update({elem["name"]: elem})
         return res
 
@@ -93,6 +82,10 @@ class Pulls():
         to_replace = copy(self.info)
         to_replace.update({"number": pull["number"]})
         self.collection.replace_one(to_replace, to_put, upsert=True)
+    def update_pull_etag(self, pull):
+        to_replace = copy(self.info)
+        to_replace.update({"number": pull["number"]})
+        self.collection.update_one(to_replace, {'$set': {"etag": pull["etag"]}})
     def get_current_pulls(self, pulls=[]):
         if pulls:
             self.delete_closed_pulls(pulls)

@@ -43,12 +43,11 @@ class RepoInfoCollection():
         self.pulls_db = Pulls(self.link)
         self.exists = False
         self.update_repo_info()
-        print(self.exists)
         if self.exists:
-            print("proof: exists")
             self.all_pulls_info = self.pulls_db.get_current_pulls(self.pulls_numbers)
-            self.people = {}
+            self.prev_people, self.prev_labels, self.prev_tests, _ = self.repo_db.get_general_info()
             self.labels = {}
+            self.people = {}
             self.tests = {}
             self.threads = queue.Queue()
             self.threads_numbers = queue.Queue()
@@ -60,33 +59,26 @@ class RepoInfoCollection():
             self.set_requests()
 
     def update_repo_info(self):
-        print("got to get info")
         info = self.repo_db.get_repo_info()
-        print("got info")
         etag = ""
         if info:
             etag = info["etag"]
-            print("etag we have: ", etag)
         response = self.session.get(self.dev_link+'/pulls?state=open',
                                     headers={'If-None-Match': etag},
                                     timeout=4)
         if response.status_code == 304:
-            print("sa,e")
             self.exists = True
-            print(self.exists)
             self.pulls_numbers = info["pulls_numbers"]
             return
         self.pulls_numbers = []
         page = 1
         if not response:
-            print(response)
             return
         else:
             etag = response.headers.get('etag')
-        print("etag we get: ", etag)
 
         while True:
-            print("page {}".format(page))
+            print(page)
             self.exists = True
             pull_per_page = [elem["number"] for elem in response.json()]
             if not pull_per_page:
@@ -129,19 +121,25 @@ class RepoInfoCollection():
                     print("enough")
             print("new elem in:", datetime.now()-self.start)
         self.done.set()
+        print(len(self.people), "len PEOPLE")
+        print("len tests", len(self.tests))
+        print("len labels", len(self.labels))
         self.repo_db.update_general_info(self.people, self.labels, self.tests, self.max_changes)
     def handle_pull_request(self, number):
         if number in self.all_pulls_info.keys():
-            pull = PullRequest(number, self.dev_link,
-                               self.session, self.all_pulls_info[number])
+            pull = PullRequest(number, self.link, self.dev_link,
+                               self.session, self.all_pulls_info[number],
+                               self.prev_people, self.prev_labels, self.prev_tests)
         else:
-            pull = PullRequest(number, self.dev_link, self.session, {})
+            pull = PullRequest(number, self.link, self.dev_link, self.session, {},
+                               self.prev_people, self.prev_labels, self.prev_tests)
         self.pull_requests.add(pull)
         if pull.get_if_pull_changed():
-            print("DA")
             info = pull.get_all_info()
-            self.pulls_db.update_pull(info)
-        print("NET")
+            if pull.get_if_only_etag_changed:
+                self.pulls_db.update_pull_etag(info)
+            else:
+                self.pulls_db.update_pull(info)
         self.people.update(pull.get_people_info())
         self.labels.update(pull.get_labels_info())
         self.tests.update(pull.get_tests_info())
@@ -178,24 +176,25 @@ class RepoInfoCollection():
 
 
 class PullRequest():
-    def __init__ (self, number, dev_link, session, saved_info):
+    def __init__ (self, number, link, dev_link, session, saved_info, people, labels, tests):
         self.session = session
         self.link = dev_link
+        self.repo_link = link
         self.number = str(number)
         self.current_info = copy.copy(saved_info)
-        print("------------------------")
-        print("------------------------")
 
         if not self.current_info:
             self.set_minimal_data()
         info = self.session.get(dev_link+"/pulls/"+self.number,
                                 headers={"If-None-Match": self.current_info["etag"]}
                                )
+        self.prev_people = people
+        self.prev_labels = labels
+        self.prev_tests = tests
         self.labels_info = {}
         self.people = {}
         self.tests_info = {}
         if info.status_code != 304:
-            print(info.headers.get('etag'), "ETAG2")
             self.current_info["etag"] = info.headers.get('etag')
             info = info.json()
             self.update_people(info["user"]["url"], info["user"]["login"], info["user"]["avatar_url"], \
@@ -210,7 +209,6 @@ class PullRequest():
 
             self.set_labels(info["labels"]),
             self.set_changes(info)
-            print("CHANGED_INFO_DONE")
             if self.current_info["last_updated"] != info["updated_at"]:
                 self.current_info["last_updated"] = info["updated_at"]
                 if self.current_info["standard_comments"] != info["comments"]:
@@ -220,13 +218,11 @@ class PullRequest():
                 self.set_last_action()
                 self.review_comments=info["review_comments"]
             self.set_reviews_details()
-        else:
-            print("DAAAA")
         self.set_tests_results()
         self.changes_num = self.current_info["changes"]["log"]
         self.changed = not (self.current_info == saved_info)
-        print("HERE WE GOOOOOOOOO")
-        #self.last_action = self.set_last_action(dev_link)
+        saved_info["etag"] = self.current_info["etag"]
+        self.only_etag_changed = not (self.current_info == saved_info)
     def __repr__(self):
         return "pull number {}".format(self.number)
     def __eq__(self, other):
@@ -260,16 +256,21 @@ class PullRequest():
 
                                  })
     def update_people(self, url, login, avatar, association):
-        print("here we are to update")
         if association == "NONE":
             association = ""
-        self.people.update({login: {
-                "url": url,
+        info = {"url": url,
                 "name": login,
                 "avatar": avatar,
-                "association": association
-            }
-        })
+                "association": association,
+                "repo_link": self.repo_link
+               }
+        if login in self.prev_people.keys():
+            if self.prev_people[login] == info:
+                return
+            if not association:
+                return
+        self.people.update({login: info})
+
     def set_changes(self, info):
         changes = { "commits": info["commits"],
                          "additions": info["additions"],
@@ -285,14 +286,16 @@ class PullRequest():
         labels = []
         for label in info:
             labels.append(label["name"])
-            self.labels_info.update({label["name"] : {
-                        "name": label["name"],
-                        "url": label["url"],
-                        "color": label["color"],
-                        "description": label["description"],
-                        "url": label["url"]
-                }
-            })
+            label_info = {"name": label["name"],
+                    "url": label["url"],
+                    "color": label["color"],
+                    "description": label["description"],
+                    "url": label["url"],
+                    "repo_link": self.repo_link}
+            if label["name"] in self.prev_labels.keys() and \
+                    self.prev_labels[label["name"]] == label_info:
+                continue
+            self.labels_info.update({label["name"]: label_info})
         self.current_info["labels"] = labels
     def set_tests_results(self):
         statuses = Counter()
@@ -314,14 +317,14 @@ class PullRequest():
                 tests[test["state"]].append(test_status)
             else:
                 tests[test["state"]] = [test_status]
-            self.tests_info.update({test["context"]: {
-                    "name": test["context"],
-                    "url": test["target_url"],
-                    "description": test["description"],
-                }
-            })
-            self.current_info["tests"].update(tests)
-            self.current_info["statuses"] = statuses
+            test_info = {"name": test["context"],
+                         "repo_link": self.repo_link}
+            if test["context"] in self.prev_tests.keys():
+                if  self.prev_tests[test["context"]] == test_info:
+                    continue
+            self.tests_info.update({test["context"]: test_info})
+        self.current_info["tests"].update(tests)
+        self.current_info["statuses"] = statuses
     def set_last_comment(self):
         comments = self.session.get(
                                     self.link+"/issues/"+self.number+'/comments',
@@ -330,7 +333,6 @@ class PullRequest():
                                     })
         if comments.status_code == 304:
             return
-        print(comments.headers.get('etug'), " СЩЬЬУЕЫ УЕГА")
         self.current_info["last_comment"]["etag"] = comments.headers.get('etag')
         comments = comments.json()
         last_comment = {}
@@ -382,11 +384,8 @@ class PullRequest():
             if reviews[-1]["user"]["login"] == self.current_info["author"]  \
                 and self.time(reviews[-1]["submitted_at"]) > \
                 self.time(self.current_info["last_comment"]["time"]):
-                    try:
-                        text = self.session.get(self.link+"/pulls/"+self.number+
-                                                    "/comments")
-                    except:
-                        print(self.number, "reviews_pulls_commens")
+                    text = self.session.get(self.link+"/pulls/"+self.number+
+                                                "/comments")
                     text = text.json()[-1]["body"]
                     self.current_info["last_comment"] = {
                                             "person": review["user"]["login"],
@@ -456,6 +455,8 @@ class PullRequest():
         return self.current_info
     def get_if_pull_changed(self):
         return self.changed
+    def get_if_only_etag_changed(self):
+        return self.only_etag_changed
     def get_changes_num(self):
         return self.changes_num
     def get_last_update(self):

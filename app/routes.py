@@ -51,14 +51,17 @@ def dashboard_settings(owner, name):
 @app.route('/task')
 def task():
     x = datetime.now()
+    print(x)
     for repo in Repos().get_repos_names():
         owner = repo[0]
         name = repo[1]
         used = repo[2]
         link = repo[3]
+        print("got info")
         if (datetime.now() - used).days > 15:
             Repos(link).delete_info()
         else:
+            print("going")
             RepoInfoCollection(owner, name, 2)
     print(datetime.now()-x)
     return redirect(url_for('choice'))
