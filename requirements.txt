@@ -1,0 +1,9 @@
+gunicorn==19.9.0
+Flask==1.0.2
+Flask-Bootstrap==3.3.7.1
+Flask-Moment==0.5.2
+Flask-WTF==0.14.2
+Jinja2==2.10
+requests==2.18.4
+Werkzeug==0.14.1
+WTForms==2.1
