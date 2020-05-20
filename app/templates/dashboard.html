@@ -29,8 +29,8 @@
           <b> {{ author }} </b>
           <br> <font color="navy"> {{ people[author].association }} </font> 
         </td>
-        <td style="text-align:center;overflow:hidden;width:280px;">  <p style="width:280px;text-align:center;"> {{ pull.title }} </p>
-          <p> <font color="grey"> Created {{ "moment(pull.created).fromNow()" }} </font>  </p><p>
+        <td style="text-align:center;overflow:hidden;width:280px;">  <p style="width:280px;text-align:center;"> [{{ pull.number }}] {{ pull.title }} </p>
+          <p> <font color="grey"> Created {{ moment(pull.created).fromNow() }} </font>  </p><p>
           <button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#{{pull.number}}" aria-expanded="false" >
                 Show description 
               </button>
@@ -55,7 +55,7 @@
                         <td>
                           {{ test.context }} 
                           <br>
-                          <font color="grey">{{" moment(test.time).fromNow()" }} </font>
+                          <font color="grey">{{ moment(test.time).fromNow() }} </font>
                         </td>
                       </tr> 
                     {% endfor %}
@@ -76,7 +76,7 @@
                         <td>
                           {{ test.context }} 
                           <br>
-                          <font color="grey">{{ "moment(test.time).fromNow()" }} </font>
+                          <font color="grey">{{ moment(test.time).fromNow() }} </font>
                         </td>
                       </tr> 
                     {% endfor %}
@@ -107,7 +107,7 @@
                           <td>
                             {{ test.context }} 
                             <br>
-                            <font color="grey">{{ "moment(test.time).fromNow()" }} </font>
+                            <font color="grey">{{ moment(test.time, "%Y-%m-%dT%H:%M:%SZ").fromNow() }} </font>
                           </td>
                         </tr> 
                       {% endfor %}
@@ -118,7 +118,7 @@
                           <td>
                             {{ test.context }} 
                             <br>
-                            <font color="grey">{{ "moment(test.time).fromNow()" }} </font>
+                            <font color="grey">{{ moment(test.time).fromNow() }} </font>
                           </td>
                         </tr> 
                       {% endfor %}
@@ -162,15 +162,9 @@
              {% endfor %}
         </td>
         <td style="text-align:center;"> {% set action = pull.last_action %}
-                {% if action %}
-                  <img src="{{ people[author].avatar }}" style="width:55px;height:55px;"> <br>
-                  {% if action == "commited" %}
-                     made a commit 
-                  {% else %}
-                     <br> {{ action.event }}
-                  {% endif %}
-                  <br> <font color="grey"> {{ "moment(pull.last_update).fromNow()" }} </font>
-                {% endif %}
+            <img src="{{ people[author].avatar }}" style="width:55px;height:55px;"> <br>
+            {{ pull.last_action.event }}
+            <br> <font color="grey"> {{ moment(pull.last_action.time).fromNow() }} </font>
         </td>
 
       </tr>

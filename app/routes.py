@@ -32,7 +32,7 @@ def create_dashboard(owner, name):
         else:
             print("created @route")
     print("exists @route")
-    pulls = [elem for elem in Pulls(link).get_current_pulls().values()]
+    pulls = Pulls(link).get_pulls()
     people, labels, tests, max_changes = Repos(link).get_general_info()
     return render_template('dashboard.html', repo_link=link, owner=owner, name=name, title="Dashboard",
                             people=people, labels=labels, tests=tests, max_changes=max_changes,
@@ -61,11 +61,10 @@ def task():
         link = repo[3]
         print("got info")
         print("OWNER:", owner)
-        if (datetime.now() - used).days > 15:
+        if (datetime.now() - used).days > 20:
             Repos(link).delete_info()
         else:
-            print("GOING GAGAGA")
-            print("going")
+            print("GOING TO UPDATE ALL REPOS")
             RepoInfoCollection(owner, name, 2)
     print(datetime.now()-x)
     return redirect(url_for('choice'))

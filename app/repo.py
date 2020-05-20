@@ -5,7 +5,7 @@ import queue
 import requests
 import threading
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from app.models import People, Labels, Pulls, Repos, Tests
 
@@ -36,7 +36,7 @@ def create_requests_session():
 
 class RepoInfoCollection():
     def __init__ (self, owner, name, number):
-        print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+        #print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
         self.session = create_requests_session()
         self.link = "https://github.com/{}/{}".format(owner, name)
         self.dev_link = "https://api.github.com/repos/{}/{}".format(owner, name)
@@ -79,7 +79,7 @@ class RepoInfoCollection():
             etag = response.headers.get('etag')
 
         while True:
-            print(page)
+            #print(page)
             self.exists = True
             pull_per_page = [elem["number"] for elem in response.json()]
             if not pull_per_page:
@@ -108,23 +108,23 @@ class RepoInfoCollection():
             elem = self.threads.get()
             number, times = self.threads_numbers.get()
             elem.join(timeout=5)
-            print(self.threads.qsize(),"number: ", number, times)
+            #print(self.threads.qsize(),"number: ", number, times)
             if (elem.is_alive()):
                 if times < 3:
-                    print("HAPPENED", number, times)
+                    #print("HAPPENED", number, times)
                     pull_thread = threading.Thread(target=self.handle_pull_request,
                                                 args=[number])
                     pull_thread.daemon = True
                     pull_thread.start()
                     self.threads.put(pull_thread)
                     self.threads_numbers.put((number, times+1))
-                else:
-                    print("enough")
-            print("new elem in:", datetime.now()-self.start)
+                #else:
+                    #print("enough")
+                #print("new elem in:", datetime.now()-self.start)
         self.done.set()
-        print(len(self.people), "len PEOPLE")
-        print("len tests", len(self.tests))
-        print("len labels", len(self.labels))
+        #print(len(self.people), "len PEOPLE")
+        #print("len tests", len(self.tests))
+        #print("len labels", len(self.labels))
         self.repo_db.update_general_info(self.people, self.labels, self.tests, self.max_changes)
     def handle_pull_request(self, number):
         if number in self.all_pulls_info.keys():
@@ -136,13 +136,13 @@ class RepoInfoCollection():
                                self.prev_people, self.prev_labels, self.prev_tests)
         self.pull_requests.add(pull)
         if pull.get_if_pull_changed():
-            print("it did")
+            #print("it did")
             info = pull.get_all_info()
             if pull.get_if_only_etag_changed():
-                print("etag onlu")
+                #print("etag onlu")
                 self.pulls_db.update_pull_etag(info)
             else:
-                print("it all")
+                #print("it all")
                 self.pulls_db.update_pull(info)
         self.people.update(pull.get_people_info())
         self.labels.update(pull.get_labels_info())
@@ -207,17 +207,21 @@ class PullRequest():
                                       "title": info["title"],
                                       "description": info["body"],
                                       "author": info['user']['login'], # login
-                                      "created": info['created_at'],
-                                      "last_commit": info['statuses_url'].split('/')[-1],
+                                      "created": self.time(info['created_at']),
+                                      "last_commit": {
+                                          "number": info['statuses_url'].split('/')[-1]
+                                        },
                                       })
 
             self.set_labels(info["labels"]),
             self.set_changes(info)
-            if self.current_info["last_updated"] != info["updated_at"]:
-                self.current_info["last_updated"] = info["updated_at"]
+            updated_at=self.time(info["updated_at"])
+            if self.current_info["last_updated"] != updated_at:
+                self.current_info["last_updated"] = updated_at
                 if self.current_info["standard_comments"] != info["comments"]:
                     self.current_info["standard_comments"] = info["comments"]
                     self.set_last_comment()
+                self.set_last_commit()
                 self.set_last_event()
                 self.set_last_action()
                 self.review_comments=info["review_comments"]
@@ -226,7 +230,7 @@ class PullRequest():
         self.changes_num = self.current_info["changes"]["log"]
         self.changed = not (self.current_info == saved_info)
         saved_info["etag"] = self.current_info["etag"]
-        print(self.current_info == saved_info)
+        #print(self.current_info == saved_info)
         self.only_etag_changed = (self.current_info == saved_info)
     def __repr__(self):
         return "pull number {}".format(self.number)
@@ -240,19 +244,19 @@ class PullRequest():
 
     def set_minimal_data(self):
         self.current_info.update({"etag": "",
-                                  "last_updated": "0",
+                                  "last_updated": datetime(1,1,1),
                                   "standard_comments": 0,
                                   "review_comments": 0,
                                   "last_comment": {
-                                      "time": "0",
+                                      "time": datetime(1,1,1),
                                       "etag": ""
                                   },
                                   "last_review": {
-                                      "time": "0",
+                                      "time": datetime(1,1,1),
                                       "etag": ""
                                   },
                                   "last_event": {
-                                      "time": "0",
+                                      "time": datetime(1,1,1),
                                       "etag": ""
                                   },
                                   "tests": {
@@ -278,10 +282,10 @@ class PullRequest():
 
     def set_changes(self, info):
         changes = { "commits": info["commits"],
-                         "additions": info["additions"],
-                         "deletions": info["deletions"],
-                         "total": int(info["additions"])+int(info["deletions"]),
-                        }
+                    "additions": info["additions"],
+                    "deletions": info["deletions"],
+                    "total": int(info["additions"])+int(info["deletions"]),
+                  }
         if changes["total"] > 0:
             changes.update({"log": math.log(int(info["additions"])+int(info["deletions"]))})
         else:
@@ -304,30 +308,31 @@ class PullRequest():
         self.current_info["labels"] = labels
     def set_tests_results(self):
         statuses = Counter()
-        tests = self.session.get(self.link+"/status/"+self.current_info["last_commit"],
+        tests = self.session.get(self.link+"/status/"+self.current_info["last_commit"]["number"],
                                  headers={"If-None-Match": self.current_info["tests"]["etag"]})
         if tests.status_code == 304:
             return
         self.current_info["tests"]["etag"] = tests.headers.get('etag')
         tests_ = tests.json() #tests
         tests = {}
-        for test in tests_["statuses"]:
-            test_status = {"context": test["context"],
-                           "url": test["target_url"],
-                           "description": test["description"],
-                           "time": datetime.strptime(test["updated_at"], "%Y-%m-%dT%H:%M:%SZ")
-                           }
-            statuses.update([test["state"]])
-            if test["state"] in tests.keys():
-                tests[test["state"]].append(test_status)
-            else:
-                tests[test["state"]] = [test_status]
-            test_info = {"name": test["context"],
-                         "repo_link": self.repo_link}
-            if test["context"] in self.prev_tests.keys():
-                if  self.prev_tests[test["context"]] == test_info:
-                    continue
-            self.tests_info.update({test["context"]: test_info})
+        if "statuses" in tests_.keys():
+            for test in tests_["statuses"]:
+                test_status = {"context": test["context"],
+                            "url": test["target_url"],
+                            "description": test["description"],
+                            "time": self.time(test["updated_at"])
+                            }
+                statuses.update([test["state"]])
+                if test["state"] in tests.keys():
+                    tests[test["state"]].append(test_status)
+                else:
+                    tests[test["state"]] = [test_status]
+                test_info = {"name": test["context"],
+                            "repo_link": self.repo_link}
+                if test["context"] in self.prev_tests.keys():
+                    if self.prev_tests[test["context"]] == test_info:
+                        continue
+                self.tests_info.update({test["context"]: test_info})
         self.current_info["tests"].update(tests)
         self.current_info["statuses"] = statuses
     def set_last_comment(self):
@@ -346,11 +351,12 @@ class PullRequest():
                                comment["user"]["login"],
                                comment["user"]["avatar_url"],
                                comment["author_association"])
-        if "comments" in self.current_info.keys():
-            if self.current_info["time"] < comments[-1]["updated_at"]:
-                self.current_info["comments"] = {
+        if comments:
+            commented_at = self.time(comments[-1]["updated_at"])
+            if self.current_info["last_comment"]["time"] < commented_at:
+                last_comment = {
                     "person": comments[-1]["user"]["login"],
-                    "time": comments[-1]["updated_at"],
+                    "time": commented_at,
                     "event": "commented",
                     "text": comments[-1]["body"],
                     "url": comments[-1]["url"]
@@ -370,7 +376,8 @@ class PullRequest():
         approved = set()
         reviewed = set()
         for review in reviews:
-            if review["state"] == "APPROVED":
+            ##print(review)
+            if "state" in review.keys() and review["state"] == "APPROVED":
                 approved.add(review["user"]["login"])
             self.update_people(review["user"]["url"],
                                review["user"]["login"],
@@ -380,26 +387,26 @@ class PullRequest():
                 reviewed.add(review["user"]["login"])
                 last_review = {"status": reviews[-1]["state"],
                                     "person": reviews[-1]["user"]["login"],
-                                    "time": reviews[-1]["submitted_at"],
+                                    "time": self.time(reviews[-1]["submitted_at"]),
                                     "event": "reviewed",
                                     "url": reviews[-1]["_links"]["html"]["href"]
                                    }
                 self.current_info["last_review"].update(last_review)
+        self.current_info["approved"] = [elem for elem in approved]
+        self.current_info["reviewed"] = [elem for elem in reviewed]
         if reviews:
-            if reviews[-1]["user"]["login"] == self.current_info["author"]  \
-                and self.time(reviews[-1]["submitted_at"]) > \
-                self.time(self.current_info["last_comment"]["time"]):
+            reviewed_at = self.time(reviews[-1]["submitted_at"])
+            if reviews[-1]["user"]["login"] == self.current_info["author"] and \
+                        reviewed_at > self.current_info["last_comment"]["time"]:
                     text = self.session.get(self.link+"/pulls/"+self.number+
                                                 "/comments")
                     text = text.json()[-1]["body"]
                     self.current_info["last_comment"] = {
                                             "person": review["user"]["login"],
-                                            "time": review["submitted_at"],
+                                            "time": reviewed_at,
                                             "text": text,
                                             "event": "commented",
                                             "url": review["_links"]["html"]["href"]}
-        self.current_info["appoved"] = [elem for elem in approved]
-        self.current_info["reviewed"] = [elem for elem in reviewed]
 
     def set_last_event(self):
         last_event = {}
@@ -412,49 +419,53 @@ class PullRequest():
             return
         self.current_info["last_event"]["etag"] = events.headers.get('etag')
         events = events.json()
-        if events and self.current_info["last_event"]["time"] < events[-1]["created_at"]:
-            last_event = {"event": events[-1]["event"],
-                          "person": events[-1]["actor"]["login"],
-                          "time": events[-1]["created_at"],
-                          "url": events[-1]["url"]
-                          }
-            if events[-1]["actor"]["login"] not in self.people.keys():
-                self.update_people(events[-1]["actor"]["url"],
-                                   events[-1]["actor"]["login"],
-                                   events[-1]["actor"]["avatar_url"], "")
-            self.current_info["last_event"].update(last_event)
+        if events:
+            happend_at = self.time(events[-1]["created_at"])
+            if self.current_info["last_event"]["time"] < happend_at:
+                last_event = {"event": events[-1]["event"],
+                            "person": events[-1]["actor"]["login"],
+                            "time": happend_at,
+                            "url": events[-1]["url"]
+                            }
+                if events[-1]["actor"]["login"] not in self.people.keys():
+                    self.update_people(events[-1]["actor"]["url"],
+                                    events[-1]["actor"]["login"],
+                                    events[-1]["actor"]["avatar_url"], "")
+                self.current_info["last_event"].update(last_event)
+
+    def set_last_commit(self):
+        commit = self.session.get(
+            self.link+"/commits/"+self.current_info["last_commit"]["number"])
+        commit = commit.json()
+        self.current_info["last_commit"]["login"] = commit["commit"]["author"]
+        self.current_info["last_commit"]["time"] = self.time(commit["commit"]["committer"]["date"])
+        self.current_info["last_commit"]["url"] = commit["html_url"]
+        self.current_info["last_commit"]["event"] = "made a commit"
 
     def set_last_action(self):
-        commit_time = self.session.get(
-            self.link+"/commits/"+self.current_info["last_commit"]
-        ).json()["commit"]["committer"]["date"]
         last_action = {}
-        last_action["diff"] = float("inf")
-        for elem in [self.current_info["last_comment"], self.current_info["last_event"], self.current_info["last_review"]]:
-            if elem:
-                if elem["time"] == self.current_info["last_updated"]:
-                    last_action = elem
-                    return
-                else:
-                    if last_action["diff"] > abs(self.time(elem["time"])- \
-                                                 self.time(self.current_info["last_updated"])):
-                        last_action = copy.copy(elem)
-                        last_action["diff"] = abs(self.time(elem["time"])- \
-                                                  self.time(self.current_info["last_updated"]))
-        if last_action["diff"] == float("inf") and \
-            commit_time == self.current_info["last_updated"]:
-                last_action = "commited"
-        else:
-            if last_action["diff"] > \
-                    abs(self.time(commit_time)-self.time(self.current_info["last_updated"])):
-                last_action = "commited"
-            elif last_action["diff"] == float("inf"):
-                last_action = {}
+        diff = timedelta(1000,0,0)
+        for elem in [self.current_info["last_comment"],
+                     self.current_info["last_event"],
+                     self.current_info["last_review"],
+                     self.current_info["last_commit"]]:
+            if elem["time"] == self.current_info["last_updated"]:
+                self.current_info["last_action"] = elem
+                return
+            else:
+                if diff > self.substr(elem["time"], self.current_info["last_updated"]):
+                    last_action = copy.copy(elem)
+                    diff = self.substr(elem["time"], self.current_info["last_updated"])
         self.current_info["last_action"] = last_action
 
     @staticmethod
     def time(time):
-        return int(''.join(x for x in time if x.isdigit()))
+        return datetime.strptime(time, "%Y-%m-%dT%H:%M:%SZ")
+    @staticmethod
+    def substr(time1, time2):
+        if time1 >= time2:
+            return time1-time2
+        return time2-time1
 
     def get_all_info(self):
         return self.current_info

@@ -7,7 +7,7 @@ from pymongo import MongoClient
 from app import app
 
 cluster = pymongo.MongoClient(app.config["MONGODB_URI"])
-db = cluster["heroku_q7dx960h"]
+db = cluster[app.config["DB_NAME"]]
 
 class People():
     def __init__(self, link):
@@ -89,6 +89,8 @@ class Pulls():
         to_replace = copy(self.info)
         to_replace.update({"number": pull["number"]})
         self.collection.update_one(to_replace, {'$set': {"etag": pull["etag"]}})
+    def get_pulls(self):
+        return self.collection.find().sort('last_action.time', pymongo.DESCENDING)
     def get_current_pulls(self, pulls=[]):
         if pulls:
             self.delete_closed_pulls(pulls)
@@ -98,11 +100,9 @@ class Pulls():
         return res
 
     def delete_closed_pulls(self, pulls):
-        print("delete:", pulls)
         current_pulls_numbers = set(pulls)
         avaliable_pulls_numbers = set([pull["number"] for pull in \
                                   self.collection.find({})])
-        print("avaliable:", list(avaliable_pulls_numbers))
         to_remove = copy(self.info)
         to_remove.update({'number' : {
             '$in' : list(avaliable_pulls_numbers - current_pulls_numbers)
@@ -159,7 +159,7 @@ class Repos():
         return people, labels, tests, max_changes
     def delete_info(self):
         self.collection.delete_one(self.info)
-        db["users"].delete_many(self.info)
+        db["people"].delete_many(self.info)
         db["tests"].delete_many(self.info)
         db["pull_requests"].delete_many(self.info)
         db["labels"].delete_many(self.info)

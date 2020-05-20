@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>
+    Form 
+</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Bootstrap -->
+    <link href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+  </head>
+  <body>
+    
+    <nav class="navbar navbar-default">
+        <div class="container">
+            <div class="navbar-header">
+                <a class="navbar-brand" href="/choice">Home</a>
+                
+                  
+            </div>
+        </div>
+    </nav>
+
+    
+    <div class="container">
+        
+        
+        
+
+        
+        
+    <h1> First step to create a pull requests dashboard </h1>
+    <div class="row">
+        <div class="col-md-4">
+            
+<form action="" method="post"
+  class="form" role="form">
+  <input id="csrf_token" name="csrf_token" type="hidden" value="IjI0NzViY2I4YTU3YWMwOGY4MjM5MDkxYThkYWEwNzhmYjFhYWE5ZjYi.Eaar8A.zJOykuJcOBmwk5kJjiMRgjUNa-w">
+  
+    
+
+
+
+
+
+
+<div class="form-group  required"><label class="control-label" for="owner">Repo's owner</label>
+        
+          <input class="form-control" id="owner" name="owner" required type="text" value="">
+        
+  </div>
+
+
+    
+
+
+
+
+
+
+<div class="form-group  required"><label class="control-label" for="name">Repo's name</label>
+        
+          <input class="form-control" id="name" name="name" required type="text" value="">
+        
+  </div>
+
+
+    
+
+
+
+
+<div class="form-group "><label class="control-label" for="number">How many pull requests you want to see?</label>
+        
+          <input class="form-control" id="number" name="number" type="text" value="all">
+        
+  </div>
+
+
+    
+
+
+
+
+
+  
+
+  
+  
+
+
+    <input class="btn btn-default" id="submit" name="submit" type="submit" value="Create dashboard">
+  
+
+
+
+
+    
+
+</form>
+        </div>
+    </div>
+
+    </div>
+
+
+    
+    
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment-with-locales.min.js"></script>
+<script>
+moment.locale("en");
+function flask_moment_render(elem) {
+    elem.innerHTML = eval('moment("' + elem.dataset.timestamp + '").' + elem.dataset.format + ';');
+    elem.classList.remove('flask-moment')
+    elem.style.display = 'inline';
+}
+function flask_moment_render_all() {
+    elems = Array.from(document.getElementsByClassName('flask-moment'));
+    for (var i = 0; i < elems.length; i++) {
+        elem = elems[i];
+        flask_moment_render(elem);
+        if (elem.dataset.refresh > 0) {
+            setInterval(function() { flask_moment_render(this); }.bind(elem), parseInt(elem.dataset.refresh));
+        }
+    }
+}
+document.addEventListener('DOMContentLoaded', function() {
+    flask_moment_render_all();
+});
+</script>
+
+  </body>
+</html>
