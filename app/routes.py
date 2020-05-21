@@ -16,8 +16,7 @@ settings = app.config["SETTINGS"]
 def choice():
     form = RepoChoice()
     if form.validate_on_submit():
-
-        return redirect(url_for('create_dashboard', number=form.number.data, owner=form.owner.data, name=form.name.data))
+        return redirect(url_for('create_dashboard', owner=form.owner.data, name=form.name.data))
     return render_template('choice.html', title='Form', form=form)
 
 @app.route('/dashboard/<owner>/<name>', methods=['GET', 'POST'])
@@ -25,13 +24,12 @@ def create_dashboard(owner, name):
     number = request.args.get('number')
     link = "https://github.com/{}/{}".format(owner, name)
     if not Repos().repo_exists(owner, name):
-        repo = RepoInfoCollection(owner, name, number)
+        repo = RepoInfoCollection(owner, name)
         if not repo.validate_repo():
             flash("This repository doesn't exist")
             return redirect(url_for('choice'))
         else:
             print("created @route")
-    print("exists @route")
     pulls = Pulls(link).get_pulls()
     people, labels, tests, max_changes = Repos(link).get_general_info()
     return render_template('dashboard.html', repo_link=link, owner=owner, name=name, title="Dashboard",
@@ -65,7 +63,7 @@ def task():
             Repos(link).delete_info()
         else:
             print("GOING TO UPDATE ALL REPOS")
-            RepoInfoCollection(owner, name, 2)
+            RepoInfoCollection(owner, name)
     print(datetime.now()-x)
     return redirect(url_for('choice'))
 

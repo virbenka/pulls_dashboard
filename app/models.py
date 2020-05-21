@@ -90,7 +90,7 @@ class Pulls():
         to_replace.update({"number": pull["number"]})
         self.collection.update_one(to_replace, {'$set': {"etag": pull["etag"]}})
     def get_pulls(self):
-        return self.collection.find().sort('last_action.time', pymongo.DESCENDING)
+        return self.collection.find(self.info).sort('last_action.time', pymongo.DESCENDING)
     def get_current_pulls(self, pulls=[]):
         if pulls:
             self.delete_closed_pulls(pulls)

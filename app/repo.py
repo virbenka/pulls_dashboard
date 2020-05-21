@@ -152,8 +152,6 @@ class RepoInfoCollection():
         self.max_changes = max(self.max_changes, changes)
     def get_requests(self):
         self.done.wait()
-        #self.repo_db.update_people(self.people, self.link)
-        #self.sort("updated")
         return self.pull_requests
     def get_people(self):
         return self.people
@@ -163,28 +161,13 @@ class RepoInfoCollection():
         return self.tests
     def get_max_changes(self):
         return self.max_changes
-    def sort(self, option="updated"):
-        if option == "created":
-            self.pull_requests = sorted(self.pull_requests, key=lambda x: \
-                                        x.get_created(), reverse=True)
-        elif option == "updated":
-            self.pull_requests = sorted(self.pull_requests, key=lambda x: \
-                                        x.get_last_update(), reverse=True)
-        elif option == "tests":
-            self.pull_requests = sorted(self.pull_requests, key=lambda x: \
-                                        x.get_statuses()["success"], reverse=True)
-        else:
-            self.pull_requests = sorted(self.pull_requests, key=lambda x: \
-                                        x.get_changes()["total"], reverse=True)
-
 
 
 class PullRequest():
-    def __init__ (self, number, link, dev_link, session, saved_info, people, labels, tests):
+    def __init__ (self, link, dev_link, session, saved_info, people, labels, tests):
         self.session = session
         self.link = dev_link
         self.repo_link = link
-        self.number = str(number)
         self.current_info = copy.copy(saved_info)
 
         if not self.current_info:

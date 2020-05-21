@@ -14,9 +14,6 @@ class RepoChoice(FlaskForm):
     name = StringField(
         "Repo's name", validators=[DataRequired()]
     )
-    number = StringField(
-        "How many pull requests you want to see?", default="all"
-    )
     submit = SubmitField('Create dashboard')
 
 
