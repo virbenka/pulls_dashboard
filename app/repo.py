@@ -164,12 +164,12 @@ class RepoInfoCollection():
 
 
 class PullRequest():
-    def __init__ (self, link, dev_link, session, saved_info, people, labels, tests):
+    def __init__ (self, number, link, dev_link, session, saved_info, people, labels, tests):
         self.session = session
         self.link = dev_link
         self.repo_link = link
         self.current_info = copy.copy(saved_info)
-
+        self.number = str(number)
         if not self.current_info:
             self.set_minimal_data()
         info = self.session.get(dev_link+"/pulls/"+self.number,
