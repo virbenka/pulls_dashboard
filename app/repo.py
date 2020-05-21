@@ -35,7 +35,7 @@ def create_requests_session():
 
 
 class RepoInfoCollection():
-    def __init__ (self, owner, name, number):
+    def __init__ (self, owner, name):
         #print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
         self.session = create_requests_session()
         self.link = "https://github.com/{}/{}".format(owner, name)
