@@ -1,27 +1,54 @@
 {% extends "base.html" %}
 
-
-{% block scripts %}
-    {{ super() }}
-    {{ moment.include_moment() }}
-    <script>
-      $('tbody tr').hover(function(){
-        $(this).find('td').addClass('hovered');
-      }, function(){
-        $(this).find('td').removeClass('hovered');
-      });
-    </script>
-{% endblock %}
-
 {% block app_content %}
   <style type="text/css">
   td.hovered {
     background-color: #EDEDED;
     color: black;
   }
+  table {
+    background-color: white;
+    width: 100%;
+  }
+  tbody td {
+  background-color: white;
+  }
+  tbody td.odd {
+    background-color: #666;
+    color: white;
+  }
+  #filter { display: none; }
+  #searchbar{
+     margin-left: 0%;
+     padding:15px;
+     border-radius: 10px;
+   }
+
+   input[type=text] {
+      width: 30%;
+      -webkit-transition: width 0.15s ease-in-out;
+      transition: width 0.15s ease-in-out;
+   }
+
+   /* When the input field gets focus,
+        change its width to 100% */
+   input[type=text]:focus {
+     width: 70%;
+   }
+
+  #tr{
+    font-size:  1.5em;
+    margin-left: 90px;
+   }
+
+  .animals{
+   display: tr;
+  }
   </style>
+  <input type="text" name="filter" value="" id="filter" />
+  <input id="searchbar"  type="text" name="search" placeholder="Search pull requests.." onkeyup="searchFun()">
   <h1>Dashboard for pull requests of <a href="{{ ''.join([repo_link]) }}" > {{ repo_link }} </a></h1>
-  <table id="pulls" class="display table table-bordered nowrap responsive" style="width: 100%;">
+  <table id="Dashboard" class="display table table-bordered nowrap responsive" style="width: 100%;">
   <thead>
     <tr>
       <th></th>
@@ -52,7 +79,7 @@
           <b> {{ author }} </b>
           <br> <font color="navy"> {{ people[author].association }} </font> 
         </td>
-        <td style="text-align:center;overflow:hidden;width:280px;">  <p style="width:280px;text-align:center;"> [{{ pull.number }}] {{ pull.title }} </p>
+        <td style="text-align:center;overflow:hidden;width:280px;">  <p class="title" style="width:280px;text-align:center;"> [{{ pull.number }}] {{ pull.title }} </p>
           <p> <font color="grey"> Created {{ moment(pull.created).fromNow() }} </font>  </p><p>
           <button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#{{pull.number}}" aria-expanded="false" >
                 Show description 
@@ -195,9 +222,6 @@
     {% endfor %}
     </tbody>
   </table>
-  <script type="text/javascript">
-      $('#pulls').DataTable();
-  </script>
 
 {% endblock %}
 

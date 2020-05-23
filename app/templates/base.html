@@ -34,15 +34,6 @@
     </div>
 {% endblock %}
 
-{% block style %}
-    <style type="text/css">
-    td.hovered {
-      background-color: red;
-      color: red;
-    }
-    </style>
-{% endblock %}
-
 {% block scripts %}
     {{ super() }}
     {{ moment.include_moment() }}
@@ -53,5 +44,43 @@
         $(this).find('td').removeClass('hovered');
       });
     </script>
+    <script>
+      function search_animal() { 
+        let input = document.getElementById('searchbar').value 
+        input=input.toUpperCase(); 
+        let y = document.getElementsByTagName('tr'); 
+        console.log(y)
+        let x = y.getElementsByClassName('title')
+          
+        for (i = 0; i < x.length; i++) {  
+          if (!x[i].innerHTML.toUpperCase().includes(input)) { 
+              x[i].style.display="none"; 
+          } 
+          else { 
+              x[i].style.display="tr";                  
+          } 
+        } 
+      } 
+    </script>
+    <script>
+      const searchFun = () => {
+        let filter = document.getElementById('searchbar').value.toUpperCase();
+        let dashboard = document.getElementById('Dashboard');
+        let tr = dashboard.getElementsByTagName('tr');
+        for (i = 0; i < tr.length; i++) {  
+          let td = tr[i].getElementsByTagName('td')[2];
+          if(td){
+            let title = td.getElementsByClassName('title')[0]
+            let textvalue = title.textContent || title.innerHTML;
+              if(textvalue.toUpperCase().indexOf(filter) > -1) {
+                tr[i].style.display = "";
+              }else{
+                tr[i].style.display="none";
+              }
+          }
+        }
+      }
+    </script>
+
 {% endblock %}
 
