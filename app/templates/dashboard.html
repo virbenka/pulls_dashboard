@@ -1,15 +1,33 @@
 {% extends "base.html" %}
 
+
+{% block scripts %}
+    {{ super() }}
+    {{ moment.include_moment() }}
+    <script>
+      $('tbody tr').hover(function(){
+        $(this).find('td').addClass('hovered');
+      }, function(){
+        $(this).find('td').removeClass('hovered');
+      });
+    </script>
+{% endblock %}
+
 {% block app_content %}
-
-
+  <style type="text/css">
+  td.hovered {
+    background-color: #EDEDED;
+    color: black;
+  }
+  </style>
   <h1>Dashboard for pull requests of <a href="{{ ''.join([repo_link]) }}" > {{ repo_link }} </a></h1>
-  <table class="table table-bordered" style="width:1200px;">
+  <table id="pulls" class="display table table-bordered nowrap responsive" style="width: 100%;">
   <thead>
     <tr>
-      <th style="text-align:center">Author</th>
-      <th style="text-align:center;table-layout: fixed;">Title</th>
-      <th style="text-align:center;widh:180px">Status</th>
+      <th></th>
+      <th style="text-align:center" data-sortable="true"> <label for="tbl_col_1"> Author</label></th>
+      <th style="text-align:center;table-layout: fixed;"><label for="tbl_col_2">Title</label></th>
+      <th style="text-align:center;widh:180px"><label for="tbl_col_3">Status</label></th>
       <th style="text-align:center">Labels</th>
       <th style="text-align:center; width:250px;">Changes</th>
       <th style="text-align:center">Reviewed</th>
@@ -23,7 +41,12 @@
     {% for pull in pull_requests %} 
       <tr>
         {% set author = pull.author %}
-        
+        <td> 
+          <div class="custom-control custom-checkbox">
+            <input type="checkbox" class="custom-control-input" id="defaultChecked2" checked>
+            <label class="custom-control-label" for="defaultChecked2"></label>
+          </div>
+        </th>
         <td style="text-align:center"> 
           <img src="{{ people[author].avatar }}" style="width:55px;height:55px;"> <br>
           <b> {{ author }} </b>
@@ -162,16 +185,19 @@
              {% endfor %}
         </td>
         <td style="text-align:center;"> {% set action = pull.last_action %}
-            <img src="{{ people[author].avatar }}" style="width:55px;height:55px;"> <br>
-            {{ pull.last_action.event }}
-            <br> <font color="grey"> {{ moment(pull.last_action.time).fromNow() }} </font>
+            <img src="{{ people[action.person].avatar }}" style="width:55px;height:55px;"> <br>
+            {{ action.person == author }} <br>
+            {{ action.event }}
+            <br> <font color="grey"> {{ moment(action.time).fromNow() }} </font>
         </td>
 
       </tr>
     {% endfor %}
     </tbody>
   </table>
-
+  <script type="text/javascript">
+      $('#pulls').DataTable();
+  </script>
 
 {% endblock %}
 

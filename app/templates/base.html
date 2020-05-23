@@ -4,6 +4,7 @@
     {% if title %}{{ title }} {% else %} Pulls dashboard {% endif %}
 {% endblock %}
 
+
 {% block navbar %}
     <nav class="navbar navbar-default">
         <div class="container">
@@ -33,7 +34,24 @@
     </div>
 {% endblock %}
 
+{% block style %}
+    <style type="text/css">
+    td.hovered {
+      background-color: red;
+      color: red;
+    }
+    </style>
+{% endblock %}
+
 {% block scripts %}
     {{ super() }}
     {{ moment.include_moment() }}
+    <script>
+      $('tbody tr').hover(function(){
+        $(this).find('td').addClass('hovered');
+      }, function(){
+        $(this).find('td').removeClass('hovered');
+      });
+    </script>
 {% endblock %}
+

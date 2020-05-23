@@ -126,20 +126,30 @@ class Repos():
         else:
             return False
     def get_repos_names(self):
-        return [(elem["owner"], elem["name"], elem["used"], elem["repo_link"]) for \
-                elem in self.collection.find({})]
+        all_ = self.collection.find({})
+        res = []
+        for elem in all_:
+            if elem:
+                print(elem)
+                res.append((elem["owner"], elem["name"], elem["used"], elem["repo_link"]))
+            else:
+                print("else!")
+                self.collection.delete_one(elem)
+        return res
     def get_repo_info(self):
         res = self.collection.find_one(self.info)
-        self.set_used()
         return res
 
-    def update(self, numbers, etag):
+    def update(self, numbers, etag=""):
         new_info = copy(self.info)
         new_info.update({"pulls_numbers":numbers, "etag": etag,
                          "name": self.link.split('/')[4],
                          "owner": self.link.split('/')[3]})
         self.collection.update_one(self.info, {'$set': new_info},
                                     upsert=True)
+    def set_updated(self):
+        self.collection.update_one(self.info,
+                                   {'$set': {"updated": datetime.now()}}, upsert=True)
     def set_used(self):
         self.collection.update_one(self.info,
                                    {'$set': {"used": datetime.now()}}, upsert=True)

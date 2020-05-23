@@ -12,6 +12,7 @@ repo = ""
 settings = app.config["SETTINGS"]
 
 @app.route('/', methods=['GET', 'POST'])
+@app.route('/home', methods=['GET', 'POST'])
 @app.route('/choice', methods=['GET', 'POST'])
 def choice():
     form = RepoChoice()
@@ -22,6 +23,7 @@ def choice():
 @app.route('/dashboard/<owner>/<name>', methods=['GET', 'POST'])
 def create_dashboard(owner, name):
     number = request.args.get('number')
+    owner, name = owner.lower(), name.lower()
     link = "https://github.com/{}/{}".format(owner, name)
     if not Repos().repo_exists(owner, name):
         repo = RepoInfoCollection(owner, name)
@@ -32,15 +34,17 @@ def create_dashboard(owner, name):
             print("created @route")
     pulls = Pulls(link).get_pulls()
     people, labels, tests, max_changes = Repos(link).get_general_info()
+    Repos(link).set_used()
     return render_template('dashboard.html', repo_link=link, owner=owner, name=name, title="Dashboard",
                             people=people, labels=labels, tests=tests, max_changes=max_changes,
                             pull_requests=pulls, settings=1)
 @app.route('/dashboard/<owner>/<name>/settings', methods=['GET', 'POST'])
 def dashboard_settings(owner, name):
     form = DashboardSettings()
+    owner, name = owner.lower(), name.lower()
     if form.validate_on_submit():
         settings["sort_type"]=form.sort.data
-        return redirect(url_for('create_dashboard', owner=owner, name=name, number="all"))
+        return redirect(url_for('create_dashboard', owner=owner, name=name))
     else:
         print("Validation Failed")
         print(form.errors)
@@ -52,14 +56,14 @@ def task():
     print(x)
     print("ISFAOIOSAFSAIFOSAIOAIOI")
     for repo in Repos().get_repos_names():
-        print("here we go")
+        print("here we go", repo)
         owner = repo[0]
         name = repo[1]
         used = repo[2]
         link = repo[3]
         print("got info")
         print("OWNER:", owner)
-        if (datetime.now() - used).days > 20:
+        if (datetime.now() - used).days > 18:
             Repos(link).delete_info()
         else:
             print("GOING TO UPDATE ALL REPOS")
@@ -67,3 +71,15 @@ def task():
     print(datetime.now()-x)
     return redirect(url_for('choice'))
 
+@app.route('/try_', methods=['GET', 'POST'])
+def try_():
+    if request.method == 'GET':
+        return render_template('try.html')
+    elif request.method == 'POST':
+        return render_template('try.html')
+
+@app.route('/dashboard/<owner>/<name>/refresh_data')
+def refresh(owner, name):
+    owner, name = owner.lower(), name.lower()
+    RepoInfoCollection(owner, name)
+    return redirect(url_for('create_dashboard', owner=owner, name=name))
