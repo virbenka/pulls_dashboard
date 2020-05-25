@@ -16,6 +16,14 @@ from time import time
 from collections import Counter
 from app import app
 
+EVENTS_NAMES = {"labeled" : "added a lable",
+                "head_ref_force_pushed" : "force-pushed the branch",
+                "ready_for_review" : "marked as ready for review",
+                "commented" : "added a comment",
+                "review_request_removed" : "removed review request",
+                "convert_to_draft" : "marked as draft",
+                }
+
 def create_requests_session():
     session = requests.Session()
     session.headers.update({'Accept': app.config['ACCEPT_HEADER'],
@@ -414,7 +422,10 @@ class PullRequest():
         if events:
             happend_at = self.time(events[-1]["created_at"])
             if self.current_info["last_event"]["time"] < happend_at:
-                last_event = {"event": events[-1]["event"],
+                event = events[-1]["event"]
+                if event in EVENTS_NAMES.keys():
+                    event = EVENTS_NAMES[event]
+                last_event = {"event": event,
                             "person": events[-1]["actor"]["login"],
                             "time": happend_at,
                             "url": events[-1]["url"]
@@ -444,10 +455,14 @@ class PullRequest():
     def set_last_action(self):
         last_action = {}
         diff = timedelta(1000,0,0)
+        open_pr = {"time": self.current_info["created"],
+                   "event": "opened pull request",
+                   "person": self.current_info["author"]}
         for elem in [self.current_info["last_comment"],
                      self.current_info["last_event"],
                      self.current_info["last_review"],
-                     self.current_info["last_commit"]]:
+                     self.current_info["last_commit"],
+                     open_pr]:
 
             try:
                 a = elem["time"]

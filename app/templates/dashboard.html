@@ -2,15 +2,11 @@
 
 {% block app_content %}
   <style type="text/css">
-  td.hovered {
+  .table_.hovered {
     background-color: #EDEDED;
     color: black;
   }
-  table {
-    background-color: white;
-    width: 100%;
-  }
-  tbody td {
+  tbody .table_ {
   background-color: white;
   }
   tbody td.odd {
@@ -52,14 +48,14 @@
   <thead>
     <tr>
       <th></th>
-      <th style="text-align:center" data-sortable="true"> <label for="tbl_col_1"> Author</label></th>
-      <th style="text-align:center;table-layout: fixed;"><label for="tbl_col_2">Title</label></th>
-      <th style="text-align:center;widh:180px"><label for="tbl_col_3">Status</label></th>
+      <th style="text-align:center"> <label for="tbl_col_1"> Author</label></th>
+      <th style="text-align:center;table-layout: fixed;" onclick="sortTable('title')"><label for="tbl_col_2">Title</label></th>
+      <th style="text-align:center;widh:180px" onclick="sortTable('tests')"><label for="tbl_col_3">Status</label></th>
       <th style="text-align:center">Labels</th>
       <th style="text-align:center; width:250px;">Changes</th>
       <th style="text-align:center">Reviewed</th>
       <th style="text-align:center">Approved</th>
-      <th style="text-align:center">Last event</th>
+      <th style="text-align:center" onclick="sortTable('updated')">Last event</th>
 
     </tr>
   </thead>
@@ -68,18 +64,18 @@
     {% for pull in pull_requests %} 
       <tr>
         {% set author = pull.author %}
-        <td> 
+        <td class="table_"> 
           <div class="custom-control custom-checkbox">
             <input type="checkbox" class="custom-control-input" id="defaultChecked2" checked>
             <label class="custom-control-label" for="defaultChecked2"></label>
           </div>
         </th>
-        <td style="text-align:center"> 
+        <td style="text-align:center" class="table_"> 
           <img src="{{ people[author].avatar }}" style="width:55px;height:55px;"> <br>
           <b> {{ author }} </b>
           <br> <font color="navy"> {{ people[author].association }} </font> 
         </td>
-        <td style="text-align:center;overflow:hidden;width:280px;">  <p class="title" style="width:280px;text-align:center;"> [{{ pull.number }}] {{ pull.title }} </p>
+        <td class="table_" style="text-align:center;overflow:hidden;width:280px;">  <p class="title" style="width:280px;text-align:center;"> [{{ pull.number }}] {{ pull.title }} </p>
           <p> <font color="grey"> Created {{ moment(pull.created).fromNow() }} </font>  </p><p>
           <button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#{{pull.number}}" aria-expanded="false" >
                 Show description 
@@ -91,12 +87,14 @@
               </div>
             </div>
         </td>
-        <td> {% set statuses=pull.statuses %}
+        <td class="tests table_"> {% set statuses=pull.statuses %}
              {% set tests=pull.tests %}
              {% if "success" in statuses %}
-              <button class="btn btn-success" type="button" data-toggle="collapse" data-target="#{{pull.number}}_succ" aria-expanded="false" style="width:135px;">
+              <button class="btn btn-success" type="button" data-toggle="collapse" data-target="#{{pull.number}}_succ" aria-expanded="false" style="width:135px; ">
+                <div class="success" id={{statuses["success"]}} >
               {{ statuses["success"] }} success
-                </button>
+              </div>
+              </button>
                 <div class="collapse" id="{{ pull.number }}_succ">
                   <div class="card card-body" style="overflow-y: scroll; height:200px;">
                   <table class="table table-condensed">
@@ -116,7 +114,9 @@
              {% endif %}
              {% if "pending" in statuses %}
               <button class="btn btn-warning" type="button" data-toggle="collapse" data-target="#{{pull.number}}_pend" aria-expanded="false" style="width:135px;" >
+              <div class="pending" id={{statuses["pending"]}}>
               {{ statuses["pending"] }} pending
+              </div>
                 </button>
                 <div class="collapse" id="{{ pull.number }}_pend">
                   <div class="card card-body" style="overflow-y: scroll; height:200px;">
@@ -139,13 +139,19 @@
               <button class="btn btn-danger" type="button" data-toggle="collapse" data-target="#{{pull.number}}_err" aria-expanded="false" style="width:135px;" >
                 {% if statuses["error"] %}
                   {% if statuses["failure"] %}
+                    <div class="error" id={{statuses["error"]}}>
                     {{ statuses["error"] }} error,
+                    </div>
                   {% else %}
+                    <div class="error" id={{statuses["error"]}}>
                     {{ statuses["error"] }} error
+                    </div>
                   {% endif %}
                 {% endif %}
                 {% if statuses["failure"] %}
+                  <div class="failure" id={{statuses["failure"]}}>
                   {{ statuses["failure"] }} failure
+                  </div>
                 {% endif %}
                 </button>
                 <div class="collapse" id="{{ pull.number }}_err">
@@ -178,11 +184,11 @@
                 </div>
              {% endif %}
         </td>
-        <td> {% for elem in pull.labels %}
+        <td class="table_"> {% for elem in pull.labels %}
              <span class="label" style="background-color: #{{ labels[elem].color }};">{{ elem }} </span>  <br>
              {% endfor %}
         </td>
-        <td style="text-align:center; width:230px;"> {% set changes = pull.changes %}  
+        <td class="table_" style="text-align:center; width:230px;"> {% set changes = pull.changes %}  
              {{ changes.commits }} commits created <br>
              lines: + {{ changes.additions }}, - {{ changes.deletions }}<br>
              {% if max_changes > 0 and changes.total > 0 %}
@@ -203,17 +209,16 @@
              </div>
 
         </td>
-        <td> {% for person in pull.reviewed %}
+        <td class="table_"> {% for person in pull.reviewed %}
              <img src="{{ people[person].avatar }}" style="width:55px;height:55px;"> 
              {% endfor %}
         </td>
-        <td> {% for person in pull.approved %}
+        <td class="table_"> {% for person in pull.approved %}
              <img src="{{ people[person].avatar }}" style="width:55px;height:55px;"> 
              {% endfor %}
         </td>
-        <td style="text-align:center;"> {% set action = pull.last_action %}
+        <td style="text-align:center;" class="updated table_"> {% set action = pull.last_action %}
             <img src="{{ people[action.person].avatar }}" style="width:55px;height:55px;"> <br>
-            {{ action.person == author }} <br>
             {{ action.event }}
             <br> <font color="grey"> {{ moment(action.time).fromNow() }} </font>
         </td>

@@ -45,24 +45,6 @@
       });
     </script>
     <script>
-      function search_animal() { 
-        let input = document.getElementById('searchbar').value 
-        input=input.toUpperCase(); 
-        let y = document.getElementsByTagName('tr'); 
-        console.log(y)
-        let x = y.getElementsByClassName('title')
-          
-        for (i = 0; i < x.length; i++) {  
-          if (!x[i].innerHTML.toUpperCase().includes(input)) { 
-              x[i].style.display="none"; 
-          } 
-          else { 
-              x[i].style.display="tr";                  
-          } 
-        } 
-      } 
-    </script>
-    <script>
       const searchFun = () => {
         let filter = document.getElementById('searchbar').value.toUpperCase();
         let dashboard = document.getElementById('Dashboard');
@@ -81,6 +63,113 @@
         }
       }
     </script>
+    <script>
+      function getTestsCounter(row, type){
+        let info = row.getElementsByClassName('tests')[0].getElementsByClassName(type)[0];
+        if (typeof(info) != 'undefined') {
+          return Number(info.id);
+        }
+        return Number('0');
+      }
+    </script>
+    <script>
+      function sortTable(column_) {
+        console.log("started")
+        var table;
+        table = document.getElementById("Dashboard");
+        var rows, i, x, y, count = 0;
+        var switching = true;
+        var sorted = false;
+        // Order is set as ascending
+        var direction = "descending";
+
+        // Run loop until no switching is needed
+        while (switching) {
+            switching = false;
+            var rows = table.rows;
+            //Loop to go through all rows
+            for (i = 1; i < (rows.length - 1); i++) {
+                var Switch = false;
+
+                // Fetch 2 elements that need to be compared
+                if (column_ =="title"){
+                  x = rows[i].getElementsByTagName("td")[2].getElementsByTagName('font')[0].children[0].outerHTML;
+                  y = rows[i + 1].getElementsByTagName("td")[2].getElementsByTagName('font')[0].children[0].outerHTML;
+                } else if (column_ =="updated") {
+                  x = rows[i].getElementsByClassName('updated')[0].getElementsByTagName('font')[0].children[0].outerHTML;
+                  y = rows[i + 1].getElementsByClassName('updated')[0].getElementsByTagName('font')[0].children[0].outerHTML;
+                } else if (column_ == "tests") {
+                  if (direction == "descending") {
+                    let succ_1 = getTestsCounter(rows[i], "success");
+                    let succ_2 = getTestsCounter(rows[i+1], "success");
+                    if (succ_1 < succ_2) {
+                      Switch = true;
+                      break;
+                    } else if (succ_1 == succ_2) {
+                      let fail_1 = getTestsCounter(rows[i], "failure")+getTestsCounter(rows[i], "error");
+                      let fail_2 = getTestsCounter(rows[i+1], "failure")+getTestsCounter(rows[i+1], "error");
+                      if (fail_1 > fail_2) {
+                        Switch = true;
+                        break;
+                      }
+                    }
+                  } else {
+                    let fail_1 = getTestsCounter(rows[i], "failure")+getTestsCounter(rows[i], "error");
+                    let fail_2 = getTestsCounter(rows[i+1], "failure")+getTestsCounter(rows[i+1], "error");
+                    if (fail_1 < fail_2) {
+                      Switch = true;
+                      break;
+                    } else if (fail_1 == fail_2) {
+                      let succ_1 = getTestsCounter(rows[i], "success");
+                      let succ_2 = getTestsCounter(rows[i+1], "success");
+                      if (succ_1 > succ_2) {
+                        Switch = true;
+                        break;
+                      }
+                    }
+                  }
+
+
+                }
+                // Check the direction of order
+                if (direction == "ascending") {
+
+                    // Check if 2 rows need to be switched
+                    if (x > y)
+                        {
+                        // If yes, mark Switch as needed and break loop
+                        Switch = true;
+                        break;
+                    }
+                } else if (direction == "descending") {
+
+                    // Check direction
+                    if (x < y)
+                        {
+                        // If yes, mark Switch as needed and break loop
+                        Switch = true;
+                        break;
+                        }
+                }
+            }
+            if (Switch) {
+                // Function to switch rows and mark switch as completed
+                rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+                switching = true;
+
+                // Increase count for each switch
+                count++;
+            } else {
+                // Run while loop again for descending order
+                if (count == 0 && direction == "descending") {
+                      sorted = true;
+                      direction = "ascending";
+                      switching = true;
+                }
+            }
+        }
+    }
+  </script>
 
 {% endblock %}
 
