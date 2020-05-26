@@ -1,6 +1,13 @@
 {% extends "base.html" %}
 
 {% block app_content %}
+  <head>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" >
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.13.9/dist/css/bootstrap-select.min.css" >
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-beta.1/dist/css/select2.min.css" rel="stylesheet" />
+
+    <!--    <link rel="stylesheet" href="jquery.dropdown.css"> --!>
+  </head>
   <style type="text/css">
   .table_.hovered {
     background-color: #EDEDED;
@@ -8,10 +15,6 @@
   }
   tbody .table_ {
   background-color: white;
-  }
-  tbody td.odd {
-    background-color: #666;
-    color: white;
   }
   #filter { display: none; }
   #searchbar{
@@ -37,10 +40,19 @@
     margin-left: 90px;
    }
 
-  .animals{
-   display: tr;
-  }
   </style>
+  <select class="labels" name="labels" multiple="multiple">
+      {% for elem in labels %}
+        <option  data-content="<span class='badge'>{{ elem }} </span>"> {{ elem  }}  </option>
+      {% endfor %}
+  </select>
+  <select class="people" name="people" multiple="multiple">
+      {% for elem in people %}
+        <option  data-content="<span class='badge'>{{ elem }} </span>"> {{ elem  }}  </option>
+      {% endfor %}
+  </select>
+
+  </div>
   <input type="text" name="filter" value="" id="filter" />
   <input id="searchbar"  type="text" name="search" placeholder="Search pull requests.." onkeyup="searchFun()">
   <h1>Dashboard for pull requests of <a href="{{ ''.join([repo_link]) }}" > {{ repo_link }} </a></h1>
@@ -52,7 +64,7 @@
       <th style="text-align:center;table-layout: fixed;" onclick="sortTable('title')"><label for="tbl_col_2">Title</label></th>
       <th style="text-align:center;widh:180px" onclick="sortTable('tests')"><label for="tbl_col_3">Status</label></th>
       <th style="text-align:center">Labels</th>
-      <th style="text-align:center; width:250px;">Changes</th>
+      <th style="text-align:center; width:250px;" onclick="sortTable('changes')">Changes</th>
       <th style="text-align:center">Reviewed</th>
       <th style="text-align:center">Approved</th>
       <th style="text-align:center" onclick="sortTable('updated')">Last event</th>
@@ -70,7 +82,7 @@
             <label class="custom-control-label" for="defaultChecked2"></label>
           </div>
         </th>
-        <td style="text-align:center" class="table_"> 
+        <td style="text-align:center" class="table_ author" id={{author}}> 
           <img src="{{ people[author].avatar }}" style="width:55px;height:55px;"> <br>
           <b> {{ author }} </b>
           <br> <font color="navy"> {{ people[author].association }} </font> 
@@ -185,10 +197,10 @@
              {% endif %}
         </td>
         <td class="table_"> {% for elem in pull.labels %}
-             <span class="label" style="background-color: #{{ labels[elem].color }};">{{ elem }} </span>  <br>
+             <span class="label" style="background-color: #{{ labels[elem].color }};">{{ elem }}</span>  <br>
              {% endfor %}
         </td>
-        <td class="table_" style="text-align:center; width:230px;"> {% set changes = pull.changes %}  
+        <td class="table_ changes" style="text-align:center; width:230px;" id={{pull.changes.total}}> {% set changes = pull.changes %}  
              {{ changes.commits }} commits created <br>
              lines: + {{ changes.additions }}, - {{ changes.deletions }}<br>
              {% if max_changes > 0 and changes.total > 0 %}
