@@ -59,7 +59,7 @@ def task():
         link = repo[3]
         print("got info")
         print("OWNER:", owner)
-        if (datetime.utcnow() - used).days > 18:
+        if (datetime.utcnow() - used).days > 5:
             Repos(link).delete_info()
         else:
             print("GOING TO UPDATE ALL REPOS")

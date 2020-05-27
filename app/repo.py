@@ -79,7 +79,6 @@ class RepoInfoCollection():
                                     headers={'If-None-Match': etag},
                                     timeout=4)
         if response.status_code == 304:
-            print("YEP")
             self.exists = True
             self.pulls_numbers = info["pulls_numbers"]
             return
@@ -206,7 +205,7 @@ class PullRequest():
         info = self.session.get(dev_link+"/pulls/"+self.number,
                                 headers={"If-None-Match": self.current_info["etag"]}
                                )
-        print(info.headers.get("X-RateLimit-Remaining"))
+        print("remaining ratelimit",info.headers.get("X-RateLimit-Remaining"))
         self.prev_people = people
         self.prev_labels = labels
         self.prev_tests = tests
@@ -361,7 +360,6 @@ class PullRequest():
                                         + "?page={}".format(page),
                                     headers={"If-None-Match": etag})
             if tests_.status_code == 304:
-                print("POP")
                 continue
             self.current_info["tests"]["pages_etags"][str(page)] = tests_.headers.get('etag')
             tests_ = tests_.json() #tests
@@ -401,7 +399,6 @@ class PullRequest():
                                         "If-None-Match": self.current_info["last_comment"]["etag"]
                                     })
         if comments.status_code == 304:
-            print("ququ")
             return
         self.current_info["last_comment"]["etag"] = comments.headers.get('etag')
         comments = comments.json()
@@ -429,7 +426,6 @@ class PullRequest():
                                     "If-None-Match": self.current_info["last_review"]["etag"]
                                 })
         if reviews.status_code == 304:
-            print("kjkj")
             return
         self.current_info["last_review"]["etag"] = reviews.headers.get('etag')
         reviews = reviews.json()
@@ -495,7 +491,6 @@ class PullRequest():
                     "If-None-Match": self.current_info["events"]["etag"]
                 })
             if events.status_code == 304:
-                print("hhhhhh")
                 return
             self.current_info["events"]["etag"] = events.headers.get('etag')
             self.current_info["events"]["pages"] = page
