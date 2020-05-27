@@ -5,7 +5,7 @@ class Config(object):
     GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
     MONGODB_URI = os.environ.get("MONGODB_URI")
     DB_NAME = os.environ.get("DB_NAME")
-    REQUEST_RETRIES = 8
+    REQUEST_RETRIES = 10
     REQUEST_TIMEOUT = 3
     ACCEPT_HEADER = "application/vnd.github.antiope-preview+json"
     SETTINGS = {"sort_type": "updated"}

@@ -39,7 +39,6 @@
     font-size:  1.5em;
     margin-left: 90px;
    }
-
   </style>
   <select class="labels" name="labels" multiple="multiple">
       {% for elem in labels %}
@@ -51,23 +50,42 @@
         <option  data-content="<span class='badge'>{{ elem }} </span>"> {{ elem  }}  </option>
       {% endfor %}
   </select>
-
-  </div>
+  <select class="assignees_select" name="assignees_select" multiple="multiple">
+      {% for elem in people %}
+        <option  data-content="<span class='badge'>{{ elem }} </span>"> {{ elem  }}  </option>
+      {% endfor %}
+  </select>
+  <select class="tests_select" name="tests_select" multiple="multiple">
+      {% for elem in tests %}
+        <option  data-content="<span class='badge'>{{ elem }} </span>"> {{ elem  }}  </option>
+      {% endfor %}
+  </select>
+  <select class="people_type" name="people_type" multiple="multiple">
+    <option> members  </option>
+    <option> collaborators  </option>
+    <option> contributors  </option>
+    <option> others  </option>
+  </select>
+  <button onclick="showMergeable()">Only mergeable</button>
+  <button onclick="sortTable('comments')">Sort by comments</button>
   <input type="text" name="filter" value="" id="filter" />
   <input id="searchbar"  type="text" name="search" placeholder="Search pull requests.." onkeyup="searchFun()">
   <h1>Dashboard for pull requests of <a href="{{ ''.join([repo_link]) }}" > {{ repo_link }} </a></h1>
   <table id="Dashboard" class="display table table-bordered nowrap responsive" style="width: 100%;">
   <thead>
     <tr>
-      <th></th>
-      <th style="text-align:center"> <label for="tbl_col_1"> Author</label></th>
-      <th style="text-align:center;table-layout: fixed;" onclick="sortTable('title')"><label for="tbl_col_2">Title</label></th>
-      <th style="text-align:center;widh:180px" onclick="sortTable('tests')"><label for="tbl_col_3">Status</label></th>
+      <th style="text-align:center;widh:180px"> Author </th>
+      <th style="text-align:center;" onclick="sortTable('title')">Title</th>
+      <th style="text-align:center;widh:180px" onclick="sortTable('tests')">Status</th>
+      <th style="text-align:center;"> Mergeable</th>
       <th style="text-align:center">Labels</th>
       <th style="text-align:center; width:250px;" onclick="sortTable('changes')">Changes</th>
+      <th style="text-align:center">Comments</th>
       <th style="text-align:center">Reviewed</th>
       <th style="text-align:center">Approved</th>
       <th style="text-align:center" onclick="sortTable('updated')">Last event</th>
+      <th style="text-align:center">Assignees</th>
+      <th style="text-align:center">Requested reviewers</th>
 
     </tr>
   </thead>
@@ -76,18 +94,12 @@
     {% for pull in pull_requests %} 
       <tr>
         {% set author = pull.author %}
-        <td class="table_"> 
-          <div class="custom-control custom-checkbox">
-            <input type="checkbox" class="custom-control-input" id="defaultChecked2" checked>
-            <label class="custom-control-label" for="defaultChecked2"></label>
-          </div>
-        </th>
         <td style="text-align:center" class="table_ author" id={{author}}> 
           <img src="{{ people[author].avatar }}" style="width:55px;height:55px;"> <br>
           <b> {{ author }} </b>
-          <br> <font color="navy"> {{ people[author].association }} </font> 
+          <br> <font color="navy" class="author_type" id={{people[author].association}}> {{ people[author].association }} </font> 
         </td>
-        <td class="table_" style="text-align:center;overflow:hidden;width:280px;">  <p class="title" style="width:280px;text-align:center;"> [{{ pull.number }}] {{ pull.title }} </p>
+        <td class="table_ created_time" style="text-align:center;overflow:hidden;width:280px;">  <p class="title" style="width:280px;text-align:center;"> [{{ pull.number }}] {{ pull.title }} </p>
           <p> <font color="grey"> Created {{ moment(pull.created).fromNow() }} </font>  </p><p>
           <button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#{{pull.number}}" aria-expanded="false" >
                 Show description 
@@ -100,7 +112,7 @@
             </div>
         </td>
         <td class="tests table_"> {% set statuses=pull.statuses %}
-             {% set tests=pull.tests %}
+             {% set tests=pull.tests.all %}
              {% if "success" in statuses %}
               <button class="btn btn-success" type="button" data-toggle="collapse" data-target="#{{pull.number}}_succ" aria-expanded="false" style="width:135px; ">
                 <div class="success" id={{statuses["success"]}} >
@@ -112,9 +124,7 @@
                   <table class="table table-condensed">
                     {% for test in tests["success"] %}
                       <tr> 
-                        <td>
-                          {{ test.context }} 
-                          <br>
+                        <td> <span class="successed_test">{{ test.context }}</span> <br>
                           <font color="grey">{{ moment(test.time).fromNow() }} </font>
                         </td>
                       </tr> 
@@ -196,6 +206,7 @@
                 </div>
              {% endif %}
         </td>
+        <td class="table_ mergeable" id="{{pull.mergeable}}"> {{ pull.mergeable }} </td>
         <td class="table_"> {% for elem in pull.labels %}
              <span class="label" style="background-color: #{{ labels[elem].color }};">{{ elem }}</span>  <br>
              {% endfor %}
@@ -221,8 +232,10 @@
              </div>
 
         </td>
+        {% set comments_num = pull.standard_comments+pull.review_comments %}
+        <td class="table_ comments" id="{{comments_num}}">{{ comments_num }}</td>
         <td class="table_"> {% for person in pull.reviewed %}
-             <img src="{{ people[person].avatar }}" style="width:55px;height:55px;"> 
+            <img src="{{ people[person].avatar }}" style="width:55px;height:55px;"> <br>
              {% endfor %}
         </td>
         <td class="table_"> {% for person in pull.approved %}
@@ -233,6 +246,15 @@
             <img src="{{ people[action.person].avatar }}" style="width:55px;height:55px;"> <br>
             {{ action.event }}
             <br> <font color="grey"> {{ moment(action.time).fromNow() }} </font>
+        </td>
+        <td class="table_">
+            {% for person in pull.assignees %}
+              <img class="assignees_" id="{{person}}" src="{{ people[person].avatar }}" style="width:55px;height:55px;"> 
+            {% endfor %}
+        </td>
+        <td class="table_"> {% for person in pull.requested_reviewers %}
+             <img src="{{ people[person].avatar }}" style="width:55px;height:55px;"> 
+             {% endfor %}
         </td>
 
       </tr>

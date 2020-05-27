@@ -50,6 +50,15 @@
     $(document).ready(function() {
       $('.people').select2();
     });
+    $(document).ready(function() {
+      $('.tests_select').select2();
+    });
+    $(document).ready(function() {
+      $('.people_type').select2();
+    });
+    $(document).ready(function() {
+      $('.assignees_select').select2();
+    });
     </script>
     <script>
       function filterTable() {
@@ -59,14 +68,27 @@
         var rows_display = {};
         let filters_num = 0;
         for (var type in filters) {
-          console.log(type);
-          if (type == "labels") {
+          if (type == "mergeable") {
+            if (filters[type] == true) {
+              filters_num += 1;
+              for (i = 1; i < rows.length; i++) {
+                mergeable = rows[i].getElementsByClassName('mergeable')[0].id
+                if (mergeable == "True") {
+                  console.log("LALA");
+                  if (rows_display[i]) {
+                    rows_display[i] += 1;
+                  } else {
+                    rows_display[i] = 1;
+                  }
+                }
+              }
+            }
+          } else if (type == "labels") {
             if (filters[type].length > 0) {
               filters_num += 1;
             } else {
               continue;
             }
-            console.log("LABELS");
             for (i = 1; i < rows.length; i++) {
               found = 0;
               current_labels = rows[i].getElementsByClassName('label');
@@ -83,9 +105,50 @@
                 }
               }
             }
-            console.log(rows_display);
-          }
-          else if (type == "people") {
+          } else if (type == "tests_select") {
+            if (filters[type].length > 0) {
+              filters_num += 1;
+            } else {
+              continue;
+            }
+            for (i = 1; i < rows.length; i++) {
+              found = 0;
+              current_tests = rows[i].getElementsByClassName('successed_test');
+              for (j = 0; j < current_tests.length; ++j) {
+                if (filters[type].indexOf(current_tests[j].innerText) > -1) {
+                  found += 1;
+                }
+              }
+              if (found == filters[type].length) {
+                if (rows_display[i]) {
+                  rows_display[i] += 1;
+                } else {
+                  rows_display[i] = 1;
+                }
+              }
+            }
+          } else if (type == "assignees") {
+            if (filters[type].length > 0) {
+              filters_num += 1;
+            } else {
+              continue;
+            }
+            for (i = 1; i < rows.length; i++) {
+              assignees = rows[i].getElementsByClassName('assignees_');
+              console.log(assignees);
+              for (j = 0; j < assignees.length; ++j) {
+                if (filters[type].indexOf(assignees[j].id) > -1) {
+                  console.log("found");
+                  if (rows_display[i]) {
+                    rows_display[i] += 1;
+                  } else {
+                    rows_display[i] = 1;
+                  }
+                  break;
+                }
+              }
+            }
+          } else if (type == "people") {
             if (filters[type].length > 0) {
               filters_num += 1;
             } else {
@@ -101,10 +164,29 @@
                 }
               }
             }
+          } else if (type == "people_type") {
+              if (filters[type].length > 0) {
+                filters_num += 1;
+              } else {
+                continue;
+              }
+
+              for (i = 1; i < rows.length; i++) {
+                author_type = rows[i].getElementsByClassName('author_type')[0].id;
+                if (author_type == "") {
+                  author_type="other";
+                }
+                if (filters[type].indexOf((author_type+'s').toLowerCase()) > -1) {
+                  if (rows_display[i]) {
+                    rows_display[i] += 1;
+                  } else {
+                  rows_display[i] = 1;
+                }
+              }
+            }
           }
         }
         if (filters_num > 0) {
-          console.log("not empty")
           for (i = 1; i < rows.length; i++) {
             if (rows_display[i] == filters_num) {
               rows[i].style.display = "";
@@ -114,7 +196,6 @@
           }
         } else {
           for (i = 1; i < rows.length; i++) {
-            console.log("HEHEHEHE")
             rows[i].style.display = "";
           }
         }
@@ -122,7 +203,7 @@
 
     </script>
     <script>
-      var filters = {'a':3};
+      var filters = {'mergeable': false};
       var targetProxy = new Proxy(filters, {
         set: function (target, key, value) {
           console.log(`${key} set to ${value}`);
@@ -131,11 +212,6 @@
           return true;
         }
       });
-
-      targetProxy.hello_world = "test";
-     $(filters).change(function() {
-       console.log(filters, ";l;l;l");
-     });
      $('.people').change(function () {
         var selectedItem = $('.people').val();
         targetProxy.people = selectedItem;
@@ -144,6 +220,27 @@
         var selectedItem = $('.labels').val();
         targetProxy.labels = selectedItem;
       });
+     $('.tests_select').change(function () {
+        var selectedItem = $('.tests_select').val();
+        targetProxy.tests_select = selectedItem;
+      });
+     $('.people_type').change(function () {
+        var selectedItem = $('.people_type').val();
+        targetProxy.people_type = selectedItem;
+      });
+     $('.assignees_select').change(function () {
+        var selectedItem = $('.assignees_select').val();
+        targetProxy.assignees = selectedItem;
+      });
+    </script>
+    <script>
+      function showMergeable() {
+        if (filters["mergeable"] == true){
+          targetProxy.mergeable = false;
+        } else {
+          targetProxy.mergeable = true;
+        }
+      }
     </script>
     <script>
       $('tbody tr').hover(function(){
@@ -156,16 +253,16 @@
       const searchFun = () => {
         let filter = document.getElementById('searchbar').value.toUpperCase();
         let dashboard = document.getElementById('Dashboard');
-        let tr = dashboard.getElementsByTagName('tr');
-        for (i = 0; i < tr.length; i++) {  
-          let td = tr[i].getElementsByTagName('td')[2];
+        let rows = dashboard.rows;
+        for (i = 1; i < rows.length; i++) {  
+          let td = rows[i];
           if(td){
             let title = td.getElementsByClassName('title')[0]
             let textvalue = title.textContent || title.innerHTML;
               if(textvalue.toUpperCase().indexOf(filter) > -1) {
-                tr[i].style.display = "";
+                rows[i].style.display = "";
               }else{
-                tr[i].style.display="none";
+                rows[i].style.display="none";
               }
           }
         }
@@ -182,7 +279,6 @@
     </script>
     <script>
       function sortTable(column_) {
-        console.log("started")
         var table;
         table = document.getElementById("Dashboard");
         var rows, i, x, y, count = 0;
@@ -201,14 +297,17 @@
 
                 // Fetch 2 elements that need to be compared
                 if (column_ =="title"){
-                  x = rows[i].getElementsByTagName("td")[2].getElementsByTagName('font')[0].children[0].outerHTML;
-                  y = rows[i + 1].getElementsByTagName("td")[2].getElementsByTagName('font')[0].children[0].outerHTML;
+                  x = rows[i].getElementsByClassName("created_time")[0].getElementsByTagName('font')[0].children[0].outerHTML;
+                  y = rows[i + 1].getElementsByClassName("created_time")[0].getElementsByTagName('font')[0].children[0].outerHTML;
                 } else if (column_ =="updated") {
                   x = rows[i].getElementsByClassName('updated')[0].getElementsByTagName('font')[0].children[0].outerHTML;
                   y = rows[i + 1].getElementsByClassName('updated')[0].getElementsByTagName('font')[0].children[0].outerHTML;
                 } else if (column_ == "changes") {
                   x = Number(rows[i].getElementsByClassName('changes')[0].id)
                   y = Number(rows[i+1].getElementsByClassName('changes')[0].id)
+                } else if (column_ == "comments") {
+                  x = Number(rows[i].getElementsByClassName('comments')[0].id)
+                  y = Number(rows[i+1].getElementsByClassName('comments')[0].id)
                 } else if (column_ == "tests") {
                   if (direction == "descending") {
                     let succ_1 = getTestsCounter(rows[i], "success");

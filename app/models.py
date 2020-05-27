@@ -23,7 +23,7 @@ class People():
                                                    "repo_link": self.link},
                                                    person, upsert=True)
     def get_people(self):
-        info = self.collection.find({"repo_link": self.link})
+        info = self.collection.find({"repo_link": self.link}).sort("name")
         res = {}
         for elem in info:
             elem.pop('_id')
@@ -44,7 +44,7 @@ class Labels():
                                                   "repo_link": self.link},
                                                    label, upsert=True)
     def get_labels(self):
-        info = self.collection.find({"repo_link": self.link})
+        info = self.collection.find({"repo_link": self.link}).sort("name")
         res = {}
         for elem in info:
             elem.pop('_id')
@@ -65,7 +65,7 @@ class Tests():
                                                   "repo_link": self.link},
                                                    test, upsert=True)
     def get_tests(self):
-        info = self.collection.find({"repo_link": self.link})
+        info = self.collection.find({"repo_link": self.link}).sort("name")
         res = {}
         for elem in info:
             elem.pop('_id')
