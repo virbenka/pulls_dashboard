@@ -21,6 +21,7 @@ EVENTS_NAMES = {"labeled" : "added a lable",
                 "ready_for_review" : "marked as ready for review",
                 "commented" : "added a comment",
                 "review_request_removed" : "removed review request",
+                "review_requested": "requested review",
                 "convert_to_draft" : "marked as draft",
                 "APPROVED" : "approved",
                 "CHANGES_REQUESTED" : "requested changes",
@@ -47,7 +48,6 @@ def create_requests_session():
 
 class RepoInfoCollection():
     def __init__ (self, owner, name):
-        #print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
         self.session = create_requests_session()
         self.link = "https://github.com/{}/{}".format(owner, name)
         self.dev_link = "https://api.github.com/repos/{}/{}".format(owner, name)
@@ -57,14 +57,13 @@ class RepoInfoCollection():
         self.update_repo_info()
         if self.exists:
             self.all_pulls_info = self.pulls_db.get_current_pulls(self.pulls_numbers)
-            self.prev_people, self.prev_labels, self.prev_tests, _ = self.repo_db.get_general_info()
+            self.prev_people, self.prev_labels, self.prev_tests = self.repo_db.get_general_info()
             self.labels = {}
             self.people = {}
             self.tests = {}
             self.excepted = set()
             self.threads = queue.Queue()
             self.threads_numbers = queue.Queue()
-            self.max_changes = 0
             self.done = threading.Event()
             self.validated = False
             self.response = []
@@ -80,6 +79,7 @@ class RepoInfoCollection():
                                     headers={'If-None-Match': etag},
                                     timeout=4)
         if response.status_code == 304:
+            print("YEP")
             self.exists = True
             self.pulls_numbers = info["pulls_numbers"]
             return
@@ -109,7 +109,7 @@ class RepoInfoCollection():
         return self.link
     def set_requests(self):
         self.pull_requests = set()
-        for number in self.pulls_numbers[:20]:
+        for number in self.pulls_numbers:
             pull_thread = threading.Thread(target=self.handle_pull_request, \
                                            args=[number])
             pull_thread.daemon = True
@@ -123,7 +123,7 @@ class RepoInfoCollection():
             #print(self.threads.qsize(),"number: ", number, times)
             if (elem.is_alive()):
                 if times < 4:
-                    #print("HAPPENED", number, times)
+                    print("HAPPENED", number, times)
                     pull_thread = threading.Thread(target=self.handle_pull_request,
                                                 args=[number])
                     pull_thread.daemon = True
@@ -149,7 +149,7 @@ class RepoInfoCollection():
         #print("len tests", len(self.tests))
         #print("len labels", len(self.labels))
         self.repo_db.set_updated()
-        self.repo_db.update_general_info(self.people, self.labels, self.tests, self.max_changes)
+        self.repo_db.update_general_info(self.people, self.labels, self.tests)
 
     def handle_pull_request(self, number):
         info = {}
@@ -179,15 +179,12 @@ class RepoInfoCollection():
         self.people.update(people)
         self.labels.update(pull.get_labels_info())
         self.tests.update(pull.get_tests_info())
-        self.update_changes_info(pull.get_changes_num())
         #except Exception as e:
 
          #   print("EXCEPTION", number)
          #   print(e)
             #self.excepted.add(number)
 
-    def update_changes_info(self, changes):
-        self.max_changes = max(self.max_changes, changes)
     def get_requests(self):
         self.done.wait()
         info = self.session.get(self.dev_link+"/pulls/"+self.number,
@@ -219,14 +216,16 @@ class PullRequest():
         if info.status_code != 304:
             self.current_info["etag"] = info.headers.get('etag')
             info = info.json()
-            self.update_people(info["user"]["url"], info["user"]["login"], info["user"]["avatar_url"], \
+            self.update_people(info["user"]["html_url"], info["user"]["login"], info["user"]["avatar_url"], \
                                info["author_association"])
             self.current_info.update({"number": info["number"],
+                                      "url": info["html_url"],
                                       "title": info["title"],
                                       "description": info["body"],
                                       "author": info['user']['login'], # login
                                       "created": self.time(info['created_at']),
                                       "mergeable": info["mergeable"],
+                                      "draft": info["draft"]
                                       })
             self.set_assignees(info["assignees"])
             self.set_requested_reviewers(info["requested_reviewers"])
@@ -242,12 +241,12 @@ class PullRequest():
                 if self.current_info["last_commit"]["number"] != info['statuses_url'].split('/')[-1]:
                     self.current_info["last_commit"]["number"] = info['statuses_url'].split('/')[-1]
                     self.set_last_commit()
-                self.current_info["review_comments"]=info["review_comments"]
             self.set_reviews_details()
+        else:
+            print("FPFPFPPFPF")
         self.set_last_action()
         self.set_tests_results()
         elem = self.current_info["last_action"]
-        self.changes_num = self.current_info["changes"]["log"]
         self.changed = not (self.current_info == saved_info)
         saved_info["etag"] = self.current_info["etag"]
         #print(self.current_info == saved_info)
@@ -278,6 +277,7 @@ class PullRequest():
                                       "time": datetime(1,1,1),
                                       "etag": ""
                                   },
+                                  "reviewed": {},
                                   "last_event": {
                                       "time": datetime(1,1,1),
                                   },
@@ -312,16 +312,14 @@ class PullRequest():
         assignees = []
         for elem in info:
             assignees.append(elem["login"])
+            self.update_people(elem["html_url"], elem["login"], elem["avatar_url"])
         self.current_info["assignees"] = [elem for elem in assignees]
-
     def set_requested_reviewers(self, info):
         requested_reviewers = []
         for elem in info:
             requested_reviewers.append(elem["login"])
+            self.update_people(elem["html_url"], elem["login"], elem["avatar_url"])
         self.current_info["requested_reviewers"] = [elem for elem in requested_reviewers]
-    def set_requested_reviewers(self, info):
-        for elem in info:
-            self.current_info["requested_reviewerd"].append(elem["login"])
     def set_changes(self, info):
         changes = { "commits": info["commits"],
                     "additions": info["additions"],
@@ -341,7 +339,7 @@ class PullRequest():
                     "url": label["url"],
                     "color": label["color"],
                     "description": label["description"],
-                    "url": label["url"],
+                    "html_url": label["url"],
                     "repo_link": self.repo_link}
             if label["name"] in self.prev_labels.keys() and \
                     self.prev_labels[label["name"]] == label_info:
@@ -363,6 +361,7 @@ class PullRequest():
                                         + "?page={}".format(page),
                                     headers={"If-None-Match": etag})
             if tests_.status_code == 304:
+                print("POP")
                 continue
             self.current_info["tests"]["pages_etags"][str(page)] = tests_.headers.get('etag')
             tests_ = tests_.json() #tests
@@ -402,12 +401,13 @@ class PullRequest():
                                         "If-None-Match": self.current_info["last_comment"]["etag"]
                                     })
         if comments.status_code == 304:
+            print("ququ")
             return
         self.current_info["last_comment"]["etag"] = comments.headers.get('etag')
         comments = comments.json()
         last_comment = {}
         for comment in comments:
-            self.update_people(comment["user"]["url"],
+            self.update_people(comment["user"]["html_url"],
                                comment["user"]["login"],
                                comment["user"]["avatar_url"],
                                comment["author_association"])
@@ -419,7 +419,7 @@ class PullRequest():
                     "time": commented_at,
                     "event": "commented",
                     "text": comments[-1]["body"],
-                    "url": comments[-1]["url"],
+                    "url": comments[-1]["html_url"],
                 }
         self.current_info["last_comment"].update(last_comment)
     def set_reviews_details(self):
@@ -429,16 +429,19 @@ class PullRequest():
                                     "If-None-Match": self.current_info["last_review"]["etag"]
                                 })
         if reviews.status_code == 304:
+            print("kjkj")
             return
         self.current_info["last_review"]["etag"] = reviews.headers.get('etag')
         reviews = reviews.json()
         last_review = {}
         approved = set()
-        reviewed = set()
+        reviewed = {}
+        #reviewed=set()
+        self.current_info["review_comments"] = 0
         for review in reviews:
             if "state" in review.keys() and review["state"] == "APPROVED":
                 approved.add(review["user"]["login"])
-            self.update_people(review["user"]["url"],
+            self.update_people(review["user"]["html_url"],
                                review["user"]["login"],
                                review["user"]["avatar_url"],
                                review["author_association"])
@@ -453,9 +456,19 @@ class PullRequest():
                 }) # not touching etag because we'll compare it with last comment
             elif review["user"]["login"] != self.current_info["author"]:
                 review_state=review["state"]
+                if review_state=="COMMENTED":
+                    self.current_info["review_comments"] += 1
                 if review["state"] in EVENTS_NAMES:
                     review_state=EVENTS_NAMES[review_state]
-                reviewed.add(review["user"]["login"])
+                    reviewed[review["user"]["login"]] = {
+                        "person":review["user"]["login"],
+                        "state": review_state,
+                        "time": reviewed_at,
+                        "url": review["html_url"]
+                    }
+
+
+                #reviewed.add(review["user"]["login"])
                 last_review = {"status": review["state"],
                                "person": review["user"]["login"],
                                "time": reviewed_at,
@@ -464,7 +477,7 @@ class PullRequest():
                               }
         self.current_info["last_review"].update(last_review)
         self.current_info["approved"] = [elem for elem in approved]
-        self.current_info["reviewed"] = [elem for elem in reviewed]
+        self.current_info["reviewed"] = reviewed
         # get comment body
         # text = self.session.get(self.link+"/pulls/"+self.number+
         #                           "/comments")
@@ -472,7 +485,7 @@ class PullRequest():
 
     def set_last_event(self):
         last_event = {}
-        page = self.current_info["events"]["pages"]
+        page = int(self.current_info["events"]["pages"])
         event_ = {}
         while True:
             etag = self.current_info["events"]["etag"]
@@ -482,6 +495,7 @@ class PullRequest():
                     "If-None-Match": self.current_info["events"]["etag"]
                 })
             if events.status_code == 304:
+                print("hhhhhh")
                 return
             self.current_info["events"]["etag"] = events.headers.get('etag')
             self.current_info["events"]["pages"] = page
@@ -501,10 +515,10 @@ class PullRequest():
                 last_event = {"event": event,
                             "person": event_["actor"]["login"],
                             "time": happend_at,
-                            "url": event_["url"]
+                            "url": ""
                             }
-                if events[-1]["actor"]["login"] not in self.people.keys():
-                    self.update_people(event_["actor"]["url"],
+                if event_["actor"]["login"] not in self.people.keys():
+                    self.update_people(event_["actor"]["html_url"],
                                     event_["actor"]["login"],
                                     event_["actor"]["avatar_url"])
                 self.current_info["last_event"].update(last_event)
@@ -567,8 +581,6 @@ class PullRequest():
         return self.changed
     def get_if_only_etag_changed(self):
         return self.only_etag_changed
-    def get_changes_num(self):
-        return self.changes_num
     def get_last_update(self):
         return datetime.strptime(self.last_updated, "%Y-%m-%dT%H:%M:%SZ")
     def get_labels_info(self):

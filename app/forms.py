@@ -14,11 +14,9 @@ class RepoChoice(FlaskForm):
     name = StringField(
         "Repo's name", validators=[DataRequired()]
     )
+    dropdown_list = [('all', 'all')]
+    for elem in range(1, 150):
+        dropdown_list.append((str(elem), str(elem)))
+    number = SelectField('Number of pull requests to show', choices=dropdown_list,
+                         default='all')
     submit = SubmitField('Create dashboard')
-
-
-class DashboardSettings(FlaskForm):
-    sort_options = [("updated", "Time updated"), ("created", "Time created"), \
-                    ("tests", "Number of tests passed"), ("diff", "Diff size")]
-    sort = CheckboxField('Label', choices=sort_options, default="updated")
-    submit = SubmitField('Submit')

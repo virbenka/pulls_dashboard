@@ -89,8 +89,15 @@ class Pulls():
         to_replace = copy(self.info)
         to_replace.update({"number": pull["number"]})
         self.collection.update_one(to_replace, {'$set': {"etag": pull["etag"]}})
-    def get_pulls(self):
-        return self.collection.find(self.info).sort('last_action.time', pymongo.DESCENDING)
+    def get_pulls(self, number):
+        if not number:
+            number = 'all'
+        pulls = self.collection.find(self.info).sort('last_action.time', pymongo.DESCENDING)
+        pulls = list(pulls)
+        if number == 'all' or int(number) > len(pulls):
+            return pulls
+        else:
+            return pulls[:int(number)]
     def get_current_pulls(self, pulls=[]):
         if pulls:
             self.delete_closed_pulls(pulls)
@@ -149,24 +156,21 @@ class Repos():
                                     upsert=True)
     def set_updated(self):
         self.collection.update_one(self.info,
-                                   {'$set': {"updated": datetime.now()}}, upsert=True)
+                                   {'$set': {"updated": datetime.utcnow()}}, upsert=True)
     def set_used(self):
         self.collection.update_one(self.info,
-                                   {'$set': {"used": datetime.now()}}, upsert=True)
-    def update_general_info(self, people, labels, tests, changes):
+                                   {'$set': {"used": datetime.utcnow()}}, upsert=True)
+    def update_general_info(self, people, labels, tests):
         People(self.link).update_people(people)
         Labels(self.link).update_labels(labels)
         Tests(self.link).update_tests(tests)
-        self.collection.update_one(self.info, {'$set': {"changes_num": changes}})
+    def get_updated(self):
+        return self.collection.find_one(self.info)["updated"]
     def get_general_info(self):
         people = People(self.link).get_people()
         labels = Labels(self.link).get_labels()
         tests = Tests(self.link).get_tests()
-        max_changes = 0
-        res = self.collection.find_one(self.info)
-        if "changes_num" in res.keys():
-            max_changes = res["changes_num"]
-        return people, labels, tests, max_changes
+        return people, labels, tests
     def delete_info(self):
         self.collection.delete_one(self.info)
         db["people"].delete_many(self.info)

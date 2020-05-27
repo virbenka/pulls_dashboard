@@ -5,87 +5,175 @@
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" >
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.13.9/dist/css/bootstrap-select.min.css" >
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-beta.1/dist/css/select2.min.css" rel="stylesheet" />
-
-    <!--    <link rel="stylesheet" href="jquery.dropdown.css"> --!>
+    <script src="https://code.iconify.design/1/1.0.6/iconify.min.js"></script>
   </head>
-  <style type="text/css">
-  .table_.hovered {
-    background-color: #EDEDED;
-    color: black;
+  <style>
+
+  .btn-group {
+    width: 1400px;
   }
-  tbody .table_ {
-  background-color: white;
+  .square {
+      width: 55px;
+      text-align:center;
+      padding:3px;
+  }
+  .table_.hovered {
+      background-color: #EDEDED;
+      color: black;
+  }
+  .table_ {
+    vertical-align:middle;
+    text-align:center;
   }
   #filter { display: none; }
   #searchbar{
-     margin-left: 0%;
-     padding:15px;
-     border-radius: 10px;
-   }
+   margin-left: 0%;
+   padding:15px;
+   border-radius: 10px;
+  }
 
-   input[type=text] {
-      width: 30%;
-      -webkit-transition: width 0.15s ease-in-out;
-      transition: width 0.15s ease-in-out;
-   }
+  input[type=text] {
+    width: 30%;
+    -webkit-transition: width 0.15s ease-in-out;
+    transition: width 0.15s ease-in-out;
+  }
 
-   /* When the input field gets focus,
-        change its width to 100% */
-   input[type=text]:focus {
-     width: 70%;
-   }
-
+  /* When the input field gets focus,
+      change its width to 100% */
+  input[type=text]:focus {
+   width: 70%;
+  }
+  .created:focus {
+    background-color: red;
+  }
   #tr{
-    font-size:  1.5em;
-    margin-left: 90px;
-   }
+      font-size:  1.5em;
+      margin-left: 90px;
+  }
+  label {
+    margin: 3px;
+    padding: 10px;
+  }
+  .press_btn.pressed {
+    background-color: #9A44BB;
+  }
+
+  .merge.pressed {
+    background-color: #33CB2B;
+    color: white;
+  }
+
+
   </style>
-  <select class="labels" name="labels" multiple="multiple">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.0.0/jquery.min.js"></script>
+      <script>
+          $(() => {
+              'use strict';
+              $('.press_btn').click(function() {
+                  $(this).toggleClass('pressed');
+                });
+          });
+      </script>
+      <script>
+          $(() => {
+              'use strict';
+              $('.merge').click(function() {
+                  $(this).toggleClass('pressed');
+                });
+          });
+      </script>
+  <h1>Dashboard for pull requests of <a href="{{ ''.join([repo_link]) }}" target="_blank"> {{ repo_link }} </a></h1>
+  <h3> Data was updated {{moment(updated).fromNow()}} </h3>
+  <p>
+  <button class="press_btn btn btn-lg" type="button" data-toggle="collapse" data-target="#sorting" aria-expanded="false" >
+        Show sort options
+  </button>
+  <button class="press_btn btn btn-lg" type="button" data-toggle="collapse" data-target="#filters" aria-expanded="false" >
+        Show filters options
+  </button>
+  <button class="press_btn btn btn-lg" type="button" data-toggle="collapse" data-target="#refresh" aria-expanded="false" >Refresh data</button>
+  </p>
+    <div class="collapse" id="refresh">
+      <div class="card card-body">
+      <p> If you're not running this app locally, consider updating the page with F5 -- database is update once in ~10 minutes, while the API rate is limited </p>
+      <a type="button" class="btn btn-danger" href="{{url_for("refresh", name=name, owner=owner, number=number)}}"> Still want to refresh</a> 
+      <a type="button" class="btn btn-success" href="{{url_for("create_dashboard", name=name, owner=owner, number=number)}}"> Reload the page</a> <br> <br>
+    </div>
+    </div>
+    <div class="collapse" id="sorting">
+      <div class="card card-body">
+    <div class="btn-group">
+    <button onclick=sortTable("updated")  class="btn update_ btn-default sort_btns">By time updated</button>
+    <button onclick=sortTable("title") class="btn create_ btn-default sort_btns">By time created</button>
+    <button onclick=sortTable("comments") class="btn btn-default sort_btns">By number of comments</button>
+    <button onclick=sortTable("changes") class="btn btn-default sort_btns">By diff size</button>
+  <button onclick=sortTable("tests") class="btn btn-default sort_btns">By number of passed tests</button>
+  <br><br>
+      </div>
+    </div>
+  </div>
+    <div class="collapse" id="filters">
+      <div class="card card-body">
+  <label for="id_label_single">
+    Select labels  (works as interseption)<br>
+  <select class="labels" name="labels" multiple="multiple" style="width: 100%">
       {% for elem in labels %}
         <option  data-content="<span class='badge'>{{ elem }} </span>"> {{ elem  }}  </option>
       {% endfor %}
   </select>
-  <select class="people" name="people" multiple="multiple">
+  </label> 
+  <label for="id_label_single">
+    Select authors (works as union) <br>
+  <select class="people" name="people" style="width: 100%" multiple="multiple">
       {% for elem in people %}
         <option  data-content="<span class='badge'>{{ elem }} </span>"> {{ elem  }}  </option>
       {% endfor %}
   </select>
-  <select class="assignees_select" name="assignees_select" multiple="multiple">
-      {% for elem in people %}
-        <option  data-content="<span class='badge'>{{ elem }} </span>"> {{ elem  }}  </option>
-      {% endfor %}
-  </select>
-  <select class="tests_select" name="tests_select" multiple="multiple">
-      {% for elem in tests %}
-        <option  data-content="<span class='badge'>{{ elem }} </span>"> {{ elem  }}  </option>
-      {% endfor %}
-  </select>
-  <select class="people_type" name="people_type" multiple="multiple">
+  </label> 
+  <label for="id_label_single">
+    Select authors associations (works as union) <br>
+  <select class="people_type" name="people_type"style="width: 100%" multiple="multiple">
     <option> members  </option>
     <option> collaborators  </option>
     <option> contributors  </option>
     <option> others  </option>
   </select>
-  <button onclick="showMergeable()">Only mergeable</button>
-  <button onclick="sortTable('comments')">Sort by comments</button>
+  </label> <br>
+  <label for="id_label_single">
+    Select assignees  (works as union) <br>
+  <select class="assignees_select" name="assignees_select" style="width: 100%" multiple="multiple">
+      {% for elem in people %}
+        <option  data-content="<span class='badge'>{{ elem }} </span>"> {{ elem  }}  </option>
+      {% endfor %}
+  </select>
+  </label> 
+  <label for="id_label_single">
+    Select passed tests (works as interseption) <br>
+  <select class="tests_select" name="tests_select"style="width: 100%" multiple="multiple">
+      {% for elem in tests %}
+        <option  data-content="<span class='badge'>{{ elem }} </span>"> {{ elem  }}  </option>
+      {% endfor %}
+  </select>
+  </label> 
+  <button  class="btn merge"  onclick="showMergeable()">Only mergeable</button> <br> <br>
+  </div>
+  </div>
   <input type="text" name="filter" value="" id="filter" />
-  <input id="searchbar"  type="text" name="search" placeholder="Search pull requests.." onkeyup="searchFun()">
-  <h1>Dashboard for pull requests of <a href="{{ ''.join([repo_link]) }}" > {{ repo_link }} </a></h1>
-  <table id="Dashboard" class="display table table-bordered nowrap responsive" style="width: 100%;">
+  <input id="searchbar"  type="text" name="search" placeholder="Search by title.." onkeyup="searchFun()">
+  <div class="center-block">
+  <table id="Dashboard" class="mytable display table-condensed table table-bordered nowrap responsive">
   <thead>
     <tr>
       <th style="text-align:center;widh:180px"> Author </th>
       <th style="text-align:center;" onclick="sortTable('title')">Title</th>
-      <th style="text-align:center;widh:180px" onclick="sortTable('tests')">Status</th>
-      <th style="text-align:center;"> Mergeable</th>
-      <th style="text-align:center">Labels</th>
+      <th style="text-align:center;width:180px" onclick="sortTable('tests')">Tests</th>
+      <th style="text-align:center;">Details </th>
+      <th style="text-align:center;width:100px;">Labels</th>
       <th style="text-align:center; width:250px;" onclick="sortTable('changes')">Changes</th>
-      <th style="text-align:center">Comments</th>
       <th style="text-align:center">Reviewed</th>
-      <th style="text-align:center">Approved</th>
-      <th style="text-align:center" onclick="sortTable('updated')">Last event</th>
+      <th style="text-align:center;" onclick="sortTable('updated')">Last event</th>
       <th style="text-align:center">Assignees</th>
-      <th style="text-align:center">Requested reviewers</th>
+      <th style="width:80px;text-align:center">Requested reviewers</th>
 
     </tr>
   </thead>
@@ -94,15 +182,16 @@
     {% for pull in pull_requests %} 
       <tr>
         {% set author = pull.author %}
-        <td style="text-align:center" class="table_ author" id={{author}}> 
-          <img src="{{ people[author].avatar }}" style="width:55px;height:55px;"> <br>
+        <td style="vertical-align:middle;text-align:center;" class="table_ author" id={{author}}> 
+          <a href={{people[author].url}} target="_blank"><img src="{{ people[author].avatar }}" class="square"></a> <br>
           <b> {{ author }} </b>
           <br> <font color="navy" class="author_type" id={{people[author].association}}> {{ people[author].association }} </font> 
         </td>
-        <td class="table_ created_time" style="text-align:center;overflow:hidden;width:280px;">  <p class="title" style="width:280px;text-align:center;"> [{{ pull.number }}] {{ pull.title }} </p>
-          <p> <font color="grey"> Created {{ moment(pull.created).fromNow() }} </font>  </p><p>
+        <td class="table_ created_time" style="text-align:center;vertical-align:middle;overflow:hidden;width:280px;">  
+          <a href={{pull.url}} class="title" target="_blank" style="color:black;width:280px;text-align:center;"> [{{ pull.number }}] {{ pull.title }} </a>
+          <p style="width:280px"> <font color="grey"> Created {{ moment(pull.created).fromNow() }} </font>  </p><p style="width:280px">
           <button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#{{pull.number}}" aria-expanded="false" >
-                Show description 
+            <span style="width:280px">   Show description </span>
               </button>
             </p>
             <div class="collapse" id="{{ pull.number }}">
@@ -111,7 +200,7 @@
               </div>
             </div>
         </td>
-        <td class="tests table_"> {% set statuses=pull.statuses %}
+        <td class="tests table_" style="vertical-align:middle;text-align:center;"> {% set statuses=pull.statuses %}
              {% set tests=pull.tests.all %}
              {% if "success" in statuses %}
               <button class="btn btn-success" type="button" data-toggle="collapse" data-target="#{{pull.number}}_succ" aria-expanded="false" style="width:135px; ">
@@ -124,7 +213,7 @@
                   <table class="table table-condensed">
                     {% for test in tests["success"] %}
                       <tr> 
-                        <td> <span class="successed_test">{{ test.context }}</span> <br>
+                        <td> <a href="{{test.url}}" title="{{test.description}}"  target="_blank" style="color:black"><span class="successed_test">{{ test.context }}</span><a> <br>
                           <font color="grey">{{ moment(test.time).fromNow() }} </font>
                         </td>
                       </tr> 
@@ -145,8 +234,8 @@
                   <table class="table table-condensed">
                     {% for test in tests["pending"] %}
                       <tr> 
-                        <td>
-                          {{ test.context }} 
+                        <td><a href="{{test.url}}" title="{{test.description}}" target="_blank" style="color:black">
+                            {{ test.context }} </a>
                           <br>
                           <font color="grey">{{ moment(test.time).fromNow() }} </font>
                         </td>
@@ -182,8 +271,8 @@
                     {% if tests["error"] %}
                       {% for test in tests["error"] %}
                         <tr> 
-                          <td>
-                            {{ test.context }} 
+                          <td> <a href="{{test.url}}" title="{{test.description}}" target="_blank" style="color:black">
+                              {{ test.context }} </a>
                             <br>
                             <font color="grey">{{ moment(test.time, "%Y-%m-%dT%H:%M:%SZ").fromNow() }} </font>
                           </td>
@@ -193,8 +282,8 @@
                     {% if tests["failure"] %}
                       {% for test in tests["failure"] %}
                         <tr> 
-                          <td>
-                            {{ test.context }} 
+                          <td> <a href="{{test.url}}"  title="{{test.description}}" target="_blank" style="color:black">
+                              {{ test.context }} </a>
                             <br>
                             <font color="grey">{{ moment(test.time).fromNow() }} </font>
                           </td>
@@ -206,13 +295,28 @@
                 </div>
              {% endif %}
         </td>
-        <td class="table_ mergeable" id="{{pull.mergeable}}"> {{ pull.mergeable }} </td>
-        <td class="table_"> {% for elem in pull.labels %}
-             <span class="label" style="background-color: #{{ labels[elem].color }};">{{ elem }}</span>  <br>
+        {% set comments_num = pull.standard_comments+pull.review_comments %}
+        <td class="table_ comments" id="{{comments_num}}" style="width:50px;vertical-align:middle;text-align:center;"> 
+        {% if pull.mergeable %} 
+          <span class="iconify mergeable" title="mergeable" id="{{pull.mergeable}}" data-icon="octicon:git-merge" data-inline="false" data-width="25px" data-height="25px" style="color: green;width:50px"></span>
+        {% else %} 
+          <span class="iconify mergeable" title="not mergeable" id="{{pull.mergeable}}" data-icon="octicon:git-merge" data-inline="false" data-width="25px" data-height="25px" style="width:50px"></span>
+        {% endif %}
+        {% if pull.draft %}
+        <span class="iconify draft" id="pull.draft" title="open draft pull request" data-icon="octicon:git-pull-request" data-inline="false" data-width="25px" data-height="25px"></span>
+        {% else %}
+          <span class="iconify draft" id="pull.draft" title="open pull request" data-icon="octicon:git-pull-request" data-inline="false" style="color: green;" data-width="25px" data-height="25px"></span>
+        {% endif %} <br>
+        {% if comments_num > 0 %} <a href={{pull.last_comment.url}} title="last comment from {{pull.last_comment.person}}" target="_blank" style="color:black">
+            {{comments_num}}  <span class="iconify" data-icon="octicon:comment" data-inline="false" data-width="25px" data-height="25px"></span> </a>
+        {% endif %}
+        </td>
+        <td class="table_" style="vertical-align:middle;text-align:center;width:100px;"> {% for elem in pull.labels %}
+            <span  class="label" title="{{labels[elem].description}}"style="width:100px;background-color: #{{ labels[elem].color }};">{{ elem }}</span>  <br>
              {% endfor %}
         </td>
-        <td class="table_ changes" style="text-align:center; width:230px;" id={{pull.changes.total}}> {% set changes = pull.changes %}  
-             {{ changes.commits }} commits created <br>
+        <td class="table_ changes" style="vertical-align:middle;text-align:center; width:230px;" id={{pull.changes.total}}> {% set changes = pull.changes %}  
+            <a href="{{pull.last_commit.url}}" targer="_blank" style="color:black" >{{ changes.commits }} commits created </a><br>
              lines: + {{ changes.additions }}, - {{ changes.deletions }}<br>
              {% if max_changes > 0 and changes.total > 0 %}
               {% set len=changes.log/max_changes*100 %}
@@ -232,28 +336,48 @@
              </div>
 
         </td>
-        {% set comments_num = pull.standard_comments+pull.review_comments %}
-        <td class="table_ comments" id="{{comments_num}}">{{ comments_num }}</td>
-        <td class="table_"> {% for person in pull.reviewed %}
-            <img src="{{ people[person].avatar }}" style="width:55px;height:55px;"> <br>
+        {% set reviews = pull.reviewed %}
+        <td style="vertical-align:middle;text-align:center;width:150px;" class="table_"> {% for person in reviews %}
+            {% if reviews[person].state == "approved" %}
+              <div style="width:100px">
+            <a href={{people[person].url}} title="{{person}}" style="width:150px;" target="_blank"><img src="{{ people[person].avatar }}" class="square"></a>
+              <a href="{{reviews[person].url}}" target="_blank" style="width:150px;" title="approved">
+                <span class="iconify" data-icon="octicon:check" data-inline="false" style="color: green;" data-width="21px"style="width:150px;" data-height="21px"></span></a>
+              </div>
+            {% elif reviews[person].state == "requested changes" %}
+              <div style="width:100px">
+            <a href={{people[person].url}} title="{{person}}" style="width:150px;" target="_blank"><img src="{{ people[person].avatar }}" class="square"></a>
+              <a href="{{reviews[person].url}}" target="_blank" style="width:150px;" title="requested changes">
+                <span class="iconify" data-icon="octicon:request-changes" data-inline="false" style="color: red;" style="width:150px;" data-width="21px" data-height="21px"></span>
+              </a></div>
+            {% elif reviews[person].state == "added a review-comment" %}
+              <div style="width:100px">
+            <a href={{people[person].url}} title="{{person}}" style="width:150px;" target="_blank"><img src="{{ people[person].avatar }}" class="square"></a>
+              <a href="{{reviews[person].url}}" target="_blank" style="width:150px;" title="added a review-comment">
+                <span class="iconify" data-icon="octicon:comment" data-inline="false" style="color: black;" style="width:150px;" data-width="21px" data-height="21px"></span>
+              </a></div>
+            <br>
+            {% endif %}
              {% endfor %}
         </td>
-        <td class="table_"> {% for person in pull.approved %}
-             <img src="{{ people[person].avatar }}" style="width:55px;height:55px;"> 
-             {% endfor %}
-        </td>
-        <td style="text-align:center;" class="updated table_"> {% set action = pull.last_action %}
-            <img src="{{ people[action.person].avatar }}" style="width:55px;height:55px;"> <br>
+        <td style="vertical-align:middle;text-align:center;width:140px;" class="updated table_"> {% set action = pull.last_action %}
+            <div style="vertical-align:middle;text-align:center;width:140px;">
+            <a href="{{people[action.person].url}}" title="{{action.person}}"target="_blank" style="vertical-align:middle;text-align:center;width:140px;">
+              <img src="{{ people[action.person].avatar }}" style="vertical-align:middle;text-align:center;" class="square"></a><br> 
+            {% if action.url != "" %}
+            <a href="{{action.url}}" target="_blank" style="vertical-align:middle;text-align:center;width:140px;color:black"> {{ action.event }} </a>
+            {% else %}
             {{ action.event }}
-            <br> <font color="grey"> {{ moment(action.time).fromNow() }} </font>
+            {% endif %}
+            <br> <font color="grey" style="vertical-align:middle;text-align:center;width:140px;"> {{ moment(action.time).fromNow() }} </font></div>
         </td>
-        <td class="table_">
+        <td class="table_" style="vertical-align:middle;text-align:center;">
             {% for person in pull.assignees %}
-              <img class="assignees_" id="{{person}}" src="{{ people[person].avatar }}" style="width:55px;height:55px;"> 
+              <a href={{people[person].url}} title="{{person}}" target="_blank"><img class="assignees_ square" id="{{person}}" src="{{ people[person].avatar }}"> </a>
             {% endfor %}
         </td>
-        <td class="table_"> {% for person in pull.requested_reviewers %}
-             <img src="{{ people[person].avatar }}" style="width:55px;height:55px;"> 
+        <td class="table_" style="vertical-align:middle;text-align:center;"> {% for person in pull.requested_reviewers %}
+            <a href={{people[person].url}} title="{{person}}" target="_blank"><img src="{{ people[person].avatar }}" class="square"> </a> <br>
              {% endfor %}
         </td>
 
@@ -262,6 +386,7 @@
     </tbody>
   </table>
 
+  </div>
 {% endblock %}
 
 
