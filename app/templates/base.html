@@ -206,7 +206,7 @@
       var filters = {'mergeable': false};
       var targetProxy = new Proxy(filters, {
         set: function (target, key, value) {
-          console.log(`${key} set to ${value}`);
+          console.log(`${key} set to '${value}'`);
           filters[key] = value;
           filterTable();
           return true;
@@ -232,6 +232,32 @@
         var selectedItem = $('.assignees_select').val();
         targetProxy.assignees = selectedItem;
       });
+    </script>
+    <script>
+      function clearSettings() {
+        $(".labels").val("").trigger("change");
+        $(".people").val("").trigger("change");
+        $(".tests_select").val("").trigger("change");
+        $(".people_type").val("").trigger("change");
+        $(".assignees_select").val("").trigger("change");
+        var mrg = $('.merge').hasClass('pressed')
+        if(mrg) {
+          $(".merge").toggleClass('pressed');
+        }
+        targetProxy.mergeable = true;
+        showMergeable();
+        sortTable("updated", "no");
+
+      }
+    </script>
+    <script>
+      function getSameLabels(label) {
+        if (filters['labels'] && filters['labels'][0] == label) {
+          targetProxy.labels = [];
+        } else {
+          targetProxy.labels = [label];
+        }
+      }
     </script>
     <script>
       function showMergeable() {
@@ -268,6 +294,7 @@
         }
       }
     </script>
+
     <script>
       function getTestsCounter(row, type){
         let info = row.getElementsByClassName('tests')[0].getElementsByClassName(type)[0];
@@ -278,7 +305,7 @@
       }
     </script>
     <script>
-      function sortTable(column_) {
+      function sortTable(column_, dir="reverse") {
         var table;
         table = document.getElementById("Dashboard");
         var rows, i, x, y, count = 0;
@@ -369,7 +396,7 @@
 
                 // Increase count for each switch
                 count++;
-            } else {
+            } else if (dir == "reverse") {
                 // Run while loop again for descending order
                 if (count == 0 && direction == "descending") {
                       sorted = true;

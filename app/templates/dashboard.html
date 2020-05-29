@@ -8,7 +8,14 @@
     <script src="https://code.iconify.design/1/1.0.6/iconify.min.js"></script>
   </head>
   <style>
-
+  .glyphicon {
+    position:absolute;right: 1px; top:4px;
+    color: #2B2525;
+    cursor: pointer;
+  }
+  th {
+    position:relative;
+  }
   .btn-group {
     width: 1400px;
   }
@@ -65,7 +72,7 @@
 
 
   </style>
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.0.0/jquery.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.0.0/jquery.min.js"></script>
       <script>
           $(() => {
               'use strict';
@@ -85,17 +92,18 @@
   <h1>Dashboard for pull requests of <a href="{{ ''.join([repo_link]) }}" target="_blank"> {{ repo_link }} </a></h1>
   <h3> Data was updated {{moment(updated).fromNow()}} </h3>
   <p>
-  <button class="press_btn btn btn-lg" type="button" data-toggle="collapse" data-target="#sorting" aria-expanded="false" >
+  <button class="press_btn btn-info btn-lg" type="button" data-toggle="collapse" data-target="#sorting" aria-expanded="false" >
         Show sort options
   </button>
-  <button class="press_btn btn btn-lg" type="button" data-toggle="collapse" data-target="#filters" aria-expanded="false" >
+  <button class="press_btn btn-info btn-lg" type="button" data-toggle="collapse" data-target="#filters" aria-expanded="false" >
         Show filters options
   </button>
-  <button class="press_btn btn btn-lg" type="button" data-toggle="collapse" data-target="#refresh" aria-expanded="false" >Refresh data</button>
+  <button class="btn-info btn-lg" type="button" onclick="clearSettings()" >Reset settings</button>
+  <button class="press_btn btn-info btn-lg" type="button" data-toggle="collapse" data-target="#refresh" aria-expanded="false" >Refresh data</button>
   </p>
     <div class="collapse" id="refresh">
       <div class="card card-body">
-      <p> If you're not running this app locally, consider updating the page with F5 -- database is update once in ~10 minutes, while the API rate is limited </p>
+      <p> If you're not running this app locally, consider updating the page with F5 -- database is updated once in ~10 minutes, while the API rate is limited </p>
       <a type="button" class="btn btn-danger" href="{{url_for("refresh", name=name, owner=owner, number=number)}}"> Still want to refresh</a> 
       <a type="button" class="btn btn-success" href="{{url_for("create_dashboard", name=name, owner=owner, number=number)}}"> Reload the page</a> <br> <br>
     </div>
@@ -165,13 +173,13 @@
   <thead>
     <tr>
       <th style="text-align:center;widh:180px"> Author </th>
-      <th style="text-align:center;" onclick="sortTable('title')">Title</th>
-      <th style="text-align:center;width:180px" onclick="sortTable('tests')">Tests</th>
-      <th style="text-align:center;">Details </th>
+      <th style="text-align:center;">Title<span class="glyphicon glyphicon-sort" aria-hidden="true" onclick="sortTable('title')"></span></th>
+      <th style="text-align:center;width:180px;">Tests<span class="glyphicon glyphicon-sort" aria-hidden="true" onclick="sortTable('tests')"></span></th>
+      <th style="text-align:center;">Details <span class="glyphicon glyphicon-sort" aria-hidden="true" onclick="sortTable('comments')"></span></th>
       <th style="text-align:center;width:100px;">Labels</th>
-      <th style="text-align:center; width:250px;" onclick="sortTable('changes')">Changes</th>
+      <th style="text-align:center; width:250px;">Changes<span class="glyphicon glyphicon-sort" aria-hidden="true" onclick="sortTable('changes')"></span></th>
       <th style="text-align:center">Reviewed</th>
-      <th style="text-align:center;" onclick="sortTable('updated')">Last event</th>
+      <th style="text-align:center;">Last event <span class="glyphicon glyphicon-sort" aria-hidden="true" onclick="sortTable('updated')"></span></th>
       <th style="text-align:center">Assignees</th>
       <th style="width:80px;text-align:center">Requested reviewers</th>
 
@@ -312,7 +320,11 @@
         {% endif %}
         </td>
         <td class="table_" style="vertical-align:middle;text-align:center;width:100px;"> {% for elem in pull.labels %}
-            <span  class="label" title="{{labels[elem].description}}"style="width:100px;background-color: #{{ labels[elem].color }};">{{ elem }}</span>  <br>
+            {% if labels[elem].decscription != '' and labels[elem].decscription != null %}
+              <span  class="label" onclick="getSameLabels('{{ elem }}')" title="{{labels[elem].description}}"style="cursor:pointer;width:100px;background-color: #{{ labels[elem].color }};">{{ elem }}</span>  <br>
+            {% else %}
+              <span  class="label" onclick="getSameLabels('{{ elem }}')" style="cursor:pointer;width:100px;background-color: #{{ labels[elem].color }};">{{ elem }}</span>  <br>
+            {% endif %}
              {% endfor %}
         </td>
         <td class="table_ changes" style="vertical-align:middle;text-align:center; width:230px;" id={{pull.changes.total}}> {% set changes = pull.changes %}  

@@ -58,6 +58,7 @@ class RepoInfoCollection():
         if self.exists:
             self.all_pulls_info = self.pulls_db.get_current_pulls(self.pulls_numbers)
             self.prev_people, self.prev_labels, self.prev_tests = self.repo_db.get_general_info()
+            self.logs = []
             self.labels = {}
             self.people = {}
             self.tests = {}
@@ -149,13 +150,15 @@ class RepoInfoCollection():
         #print("len labels", len(self.labels))
         self.repo_db.set_updated()
         self.repo_db.update_general_info(self.people, self.labels, self.tests)
+        #for elem in self.logs:
+        #    print(elem)
 
     def handle_pull_request(self, number):
         info = {}
         if number in self.all_pulls_info.keys():
             info = self.all_pulls_info[number]
         #try:
-        pull = PullRequest(number, self.link, self.dev_link, self.session, {},
+        pull = PullRequest(number, self.link, self.dev_link, self.session, info,
                             self.prev_people, self.prev_labels, self.prev_tests)
         self.pull_requests.add(pull)
         if pull.get_if_pull_changed():
@@ -178,6 +181,7 @@ class RepoInfoCollection():
         self.people.update(people)
         self.labels.update(pull.get_labels_info())
         self.tests.update(pull.get_tests_info())
+        self.logs.append({number: pull.get_logs()})
         #except Exception as e:
 
          #   print("EXCEPTION", number)
@@ -200,12 +204,13 @@ class PullRequest():
         self.repo_link = link
         self.current_info = copy.copy(saved_info)
         self.number = str(number)
+        self.logs = {"general" : "","tests": {"pages": {"1" : "nothing"}}, "reviews" : "", "commits" : "", "events" : "", "comments" : ""}
         if not self.current_info:
             self.set_minimal_data()
         info = self.session.get(dev_link+"/pulls/"+self.number,
                                 headers={"If-None-Match": self.current_info["etag"]}
                                )
-        print("remaining ratelimit",info.headers.get("X-RateLimit-Remaining"))
+        self.logs["general"] = info.headers.get("X-RateLimit-Remaining")
         self.prev_people = people
         self.prev_labels = labels
         self.prev_tests = tests
@@ -241,8 +246,6 @@ class PullRequest():
                     self.current_info["last_commit"]["number"] = info['statuses_url'].split('/')[-1]
                     self.set_last_commit()
             self.set_reviews_details()
-        else:
-            print("FPFPFPPFPF")
         self.set_last_action()
         self.set_tests_results()
         elem = self.current_info["last_action"]
@@ -286,7 +289,8 @@ class PullRequest():
                                   },
                                   "tests": {
                                       "pages_etags": {"1" : ""},
-                                      "all": {}
+                                      "all": {},
+                                      "last_page": "1"
                                   },
                                  })
     def update_people(self, url, login, avatar, association=""):
@@ -359,13 +363,20 @@ class PullRequest():
             tests_ = self.session.get(self.link+"/status/"+self.current_info["last_commit"]["number"] \
                                         + "?page={}".format(page),
                                     headers={"If-None-Match": etag})
+            self.logs["tests"]["pages"].update({str(page) : tests_.headers.get("X-RateLimit-Remaining")})
             if tests_.status_code == 304:
+                #print(str(page), self.current_info["tests"]["last_page"], str(page) == self.current_info["tests"]["last_page"])
+                if str(page) == self.current_info["tests"]["last_page"]:
+                    break
+                page += 1
                 continue
+            self.logs["tests"]["pages"].update({str(page) : tests_.headers.get("X-RateLimit-Remaining")})
+
             self.current_info["tests"]["pages_etags"][str(page)] = tests_.headers.get('etag')
             tests_ = tests_.json() #tests
             if "total_count" in tests_.keys():
                 total = tests_["total_count"]
-            if "statuses" in tests_.keys():
+            if "statuses" in tests_.keys() and tests_["statuses"]:
                 for test in tests_["statuses"]:
                     count += 1
                     test_status = {"context": test["context"],
@@ -386,9 +397,10 @@ class PullRequest():
                 self.current_info["tests"]["all"].update(tests)
             else:
                 break
-            page += 1
             if total != -1 and total == count:
                 break
+            page += 1
+        self.current_info["tests"]["last_page"] = str(page)
         for elem in self.current_info["tests"]["all"]:
             statuses[elem] = len(self.current_info["tests"]["all"][elem])
         self.current_info["statuses"] = statuses
@@ -400,6 +412,7 @@ class PullRequest():
                                     })
         if comments.status_code == 304:
             return
+        self.logs["comments"] = comments.headers.get("X-RateLimit-Remaining")
         self.current_info["last_comment"]["etag"] = comments.headers.get('etag')
         comments = comments.json()
         last_comment = {}
@@ -427,6 +440,7 @@ class PullRequest():
                                 })
         if reviews.status_code == 304:
             return
+        self.logs["reviews"] = reviews.headers.get("X-RateLimit-Remaining")
         self.current_info["last_review"]["etag"] = reviews.headers.get('etag')
         reviews = reviews.json()
         last_review = {}
@@ -435,8 +449,12 @@ class PullRequest():
         #reviewed=set()
         self.current_info["review_comments"] = 0
         for review in reviews:
-            if "state" in review.keys() and review["state"] == "APPROVED":
-                approved.add(review["user"]["login"])
+            try:
+                if "state" in review.keys() and review["state"] == "APPROVED":
+                    approved.add(review["user"]["login"])
+            except:
+                print(self.current_info["number"], "THIS FAILED")
+                continue;
             self.update_people(review["user"]["html_url"],
                                review["user"]["login"],
                                review["user"]["avatar_url"],
@@ -492,6 +510,7 @@ class PullRequest():
                 })
             if events.status_code == 304:
                 return
+            self.logs["events"] = events.headers.get("X-RateLimit-Remaining")
             self.current_info["events"]["etag"] = events.headers.get('etag')
             self.current_info["events"]["pages"] = page
             if events.json():
@@ -521,6 +540,7 @@ class PullRequest():
     def set_last_commit(self):
         commit = self.session.get(
             self.link+"/commits/"+self.current_info["last_commit"]["number"])
+        self.logs["commits"] = commit.headers.get("X-RateLimit-Remaining")
         commit = commit.json()
         try:
             person = commit["author"]
@@ -584,4 +604,6 @@ class PullRequest():
         return self.people
     def get_tests_info(self):
         return self.tests_info
+    def get_logs(self):
+        return self.logs
 
