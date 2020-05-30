@@ -37,6 +37,9 @@
 {% block scripts %}
     {{ super() }}
     {{ moment.include_moment() }}
+    <script>
+    moment.relativeTimeThreshold('m', 59)
+    </script>
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"> </script>
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.0.0/jquery.min.js"></script>
@@ -74,7 +77,6 @@
               for (i = 1; i < rows.length; i++) {
                 mergeable = rows[i].getElementsByClassName('mergeable')[0].id
                 if (mergeable == "True") {
-                  console.log("LALA");
                   if (rows_display[i]) {
                     rows_display[i] += 1;
                   } else {
@@ -135,10 +137,8 @@
             }
             for (i = 1; i < rows.length; i++) {
               assignees = rows[i].getElementsByClassName('assignees_');
-              console.log(assignees);
               for (j = 0; j < assignees.length; ++j) {
                 if (filters[type].indexOf(assignees[j].id) > -1) {
-                  console.log("found");
                   if (rows_display[i]) {
                     rows_display[i] += 1;
                   } else {
@@ -235,11 +235,11 @@
     </script>
     <script>
       function clearSettings() {
-        $(".labels").val("").trigger("change");
-        $(".people").val("").trigger("change");
-        $(".tests_select").val("").trigger("change");
-        $(".people_type").val("").trigger("change");
-        $(".assignees_select").val("").trigger("change");
+        $(".labels").val(null).trigger("change");
+        $(".people").val(null).trigger("change");
+        $(".tests_select").val(null).trigger("change");
+        $(".people_type").val(null).trigger("change");
+        $(".assignees_select").val(null).trigger("change");
         var mrg = $('.merge').hasClass('pressed')
         if(mrg) {
           $(".merge").toggleClass('pressed');
@@ -258,6 +258,17 @@
           targetProxy.labels = [label];
         }
       }
+    </script>
+    <script>
+      function nobodyAssigned() {
+        if (filters['assignees']) {
+          $(".assignees_select").val("").trigger("change");
+          targetProxy.labels = [];
+        } else {
+          targetProxy.labels = [label];
+        }
+      }
+
     </script>
     <script>
       function showMergeable() {
@@ -324,11 +335,11 @@
 
                 // Fetch 2 elements that need to be compared
                 if (column_ =="title"){
-                  x = rows[i].getElementsByClassName("created_time")[0].getElementsByTagName('font')[0].children[0].outerHTML;
-                  y = rows[i + 1].getElementsByClassName("created_time")[0].getElementsByTagName('font')[0].children[0].outerHTML;
+                  x = rows[i].getElementsByClassName("pull_created")[0].id;
+                  y = rows[i + 1].getElementsByClassName("pull_created")[0].id;
                 } else if (column_ =="updated") {
-                  x = rows[i].getElementsByClassName('updated')[0].getElementsByTagName('font')[0].children[0].outerHTML;
-                  y = rows[i + 1].getElementsByClassName('updated')[0].getElementsByTagName('font')[0].children[0].outerHTML;
+                  x = rows[i].getElementsByClassName('pull_updated')[0].id;
+                  y = rows[i + 1].getElementsByClassName('pull_updated')[0].id;
                 } else if (column_ == "changes") {
                   x = Number(rows[i].getElementsByClassName('changes')[0].id)
                   y = Number(rows[i+1].getElementsByClassName('changes')[0].id)
@@ -406,6 +417,38 @@
             }
         }
     }
+  </script>
+  <script>
+  $(document).ready(function() {
+    moment.relativeTimeThreshold('m', 59);
+    data_update = document.getElementsByClassName("db_updated")[0].id;
+    $('.db_updated').html(moment.utc(data_update).fromNow());
+    rows = document.getElementById('Dashboard').rows;
+    for (i = 1; i < rows.length; i++) {
+      time_updated = rows[i].getElementsByClassName('pull_updated')[0].id;
+      time_created = rows[i].getElementsByClassName('pull_created')[0].id;
+      rows[i].getElementsByClassName('pull_updated')[0].innerText = moment.utc(time_updated).fromNow();
+      rows[i].getElementsByClassName('pull_created')[0].innerText = moment.utc(time_created).fromNow();
+      tests = rows[i].getElementsByClassName('test_updated');
+    }
+    var interval = setInterval(function() {
+      $('.db_updated').html(moment.utc(data_update).fromNow());
+      rows = document.getElementById('Dashboard').rows;
+      for (i = 1; i < rows.length; i++) {
+        time_updated = rows[i].getElementsByClassName('pull_updated')[0].id;
+        time_created = rows[i].getElementsByClassName('pull_created')[0].id;
+        rows[i].getElementsByClassName('pull_updated')[0].innerText = moment.utc(time_updated).fromNow();
+        rows[i].getElementsByClassName('pull_created')[0].innerText = moment.utc(time_created).fromNow();
+        tests = rows[i].getElementsByClassName('test_updated');
+        if(tests){
+          for (j = 0; j != tests.length; j++) {
+            time = tests[j].id;
+            tests[j].innerText = moment.utc(time).fromNow();
+          }
+        }
+      }
+    }, 50000);
+  });
   </script>
 
 {% endblock %}

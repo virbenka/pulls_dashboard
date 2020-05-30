@@ -90,7 +90,7 @@
           });
       </script>
   <h1>Dashboard for pull requests of <a href="{{ ''.join([repo_link]) }}" target="_blank"> {{ repo_link }} </a></h1>
-  <h3> Data was updated {{moment(updated).fromNow()}} </h3>
+  <h3> Data was updated <span class="db_updated" id="{{updated}}"> </span> </h3>
   <p>
   <button class="press_btn btn-info btn-lg" type="button" data-toggle="collapse" data-target="#sorting" aria-expanded="false" >
         Show sort options
@@ -150,9 +150,14 @@
   <label for="id_label_single">
     Select assignees  (works as union) <br>
   <select class="assignees_select" name="assignees_select" style="width: 100%" multiple="multiple">
+<!--    <optgroup label="Show not assigned pulls">
+      <option>Nobody </option>
+    </optgroup>
+    <optgroup label="Show pulls assigned to"> --!>
       {% for elem in people %}
         <option  data-content="<span class='badge'>{{ elem }} </span>"> {{ elem  }}  </option>
       {% endfor %}
+      <!--    </optgroup> --!>
   </select>
   </label> 
   <label for="id_label_single">
@@ -197,7 +202,7 @@
         </td>
         <td class="table_ created_time" style="text-align:center;vertical-align:middle;overflow:hidden;width:280px;">  
           <a href={{pull.url}} class="title" target="_blank" style="color:black;width:280px;text-align:center;"> [{{ pull.number }}] {{ pull.title }} </a>
-          <p style="width:280px"> <font color="grey"> Created {{ moment(pull.created).fromNow() }} </font>  </p><p style="width:280px">
+          <p style="width:280px"> <font color="grey"> Created <span id="{{pull.created}}" class="pull_created"></span></font>  </p><p style="width:280px">
           <button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#{{pull.number}}" aria-expanded="false" >
             <span style="width:280px">   Show description </span>
               </button>
@@ -222,7 +227,7 @@
                     {% for test in tests["success"] %}
                       <tr> 
                         <td> <a href="{{test.url}}" title="{{test.description}}"  target="_blank" style="color:black"><span class="successed_test">{{ test.context }}</span><a> <br>
-                          <font color="grey">{{ moment(test.time).fromNow() }} </font>
+                              <font color="grey"><span class="test_updated" id='{{test.time}}'> {{moment(test.time).fromNow()}} </span> </font>
                         </td>
                       </tr> 
                     {% endfor %}
@@ -245,7 +250,7 @@
                         <td><a href="{{test.url}}" title="{{test.description}}" target="_blank" style="color:black">
                             {{ test.context }} </a>
                           <br>
-                          <font color="grey">{{ moment(test.time).fromNow() }} </font>
+                          <font color="grey"> <span class="test_updated" id='{{test.time}}'>{{ moment(test.time).fromNow() }}</span> </font>
                         </td>
                       </tr> 
                     {% endfor %}
@@ -282,7 +287,7 @@
                           <td> <a href="{{test.url}}" title="{{test.description}}" target="_blank" style="color:black">
                               {{ test.context }} </a>
                             <br>
-                            <font color="grey">{{ moment(test.time, "%Y-%m-%dT%H:%M:%SZ").fromNow() }} </font>
+                            <font color="grey"> <span class="test_updated" id='{{test.time}}'>{{ moment(test.time).fromNow() }}</span> </font>
                           </td>
                         </tr> 
                       {% endfor %}
@@ -293,7 +298,7 @@
                           <td> <a href="{{test.url}}"  title="{{test.description}}" target="_blank" style="color:black">
                               {{ test.context }} </a>
                             <br>
-                            <font color="grey">{{ moment(test.time).fromNow() }} </font>
+                            <font color="grey"><span class="test_updated" id='{{test.time}}'>{{ moment(test.time).fromNow() }}</span> </font>
                           </td>
                         </tr> 
                       {% endfor %}
@@ -381,7 +386,7 @@
             {% else %}
             {{ action.event }}
             {% endif %}
-            <br> <font color="grey" style="vertical-align:middle;text-align:center;width:140px;"> {{ moment(action.time).fromNow() }} </font></div>
+            <br> <font color="grey" style="vertical-align:middle;text-align:center;width:140px;"><span id="{{action.time}}" class="pull_updated"></span> </font></div>
         </td>
         <td class="table_" style="vertical-align:middle;text-align:center;">
             {% for person in pull.assignees %}

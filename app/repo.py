@@ -16,7 +16,7 @@ from time import time
 from collections import Counter
 from app import app
 
-EVENTS_NAMES = {"labeled" : "added a lable",
+EVENTS_NAMES = {"labeled" : "added a label",
                 "head_ref_force_pushed" : "force-pushed the branch",
                 "ready_for_review" : "marked as ready for review",
                 "commented" : "added a comment",
