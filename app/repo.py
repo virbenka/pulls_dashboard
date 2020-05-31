@@ -355,21 +355,21 @@ class PullRequest():
         count = 0
         tests = {}
         total = -1
+        self.current_info["tests"]["all"] = {}
         while True:
             if str(page) in self.current_info["tests"]["pages_etags"].keys():
                 etag = self.current_info["tests"]["pages_etags"][str(page)]
             else:
                 etag = ""
             tests_ = self.session.get(self.link+"/status/"+self.current_info["last_commit"]["number"] \
-                                        + "?page={}".format(page),
-                                    headers={"If-None-Match": etag})
+                                      + "?page={}".format(page))
             self.logs["tests"]["pages"].update({str(page) : tests_.headers.get("X-RateLimit-Remaining")})
-            if tests_.status_code == 304:
+            #if tests_.status_code == 304:
                 #print(str(page), self.current_info["tests"]["last_page"], str(page) == self.current_info["tests"]["last_page"])
-                if str(page) == self.current_info["tests"]["last_page"]:
-                    break
-                page += 1
-                continue
+            #    if str(page) == self.current_info["tests"]["last_page"]:
+            #        break
+            #    page += 1
+            #    continue
             self.logs["tests"]["pages"].update({str(page) : tests_.headers.get("X-RateLimit-Remaining")})
 
             self.current_info["tests"]["pages_etags"][str(page)] = tests_.headers.get('etag')
