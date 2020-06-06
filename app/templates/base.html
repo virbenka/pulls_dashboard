@@ -6,6 +6,12 @@
 
 
 {% block navbar %}
+  <style>
+    .container {
+      margin-left: 130px !important;
+    }
+  </style>
+
     <nav class="navbar navbar-default">
         <div class="container">
             <div class="navbar-header">
@@ -135,6 +141,7 @@
             } else {
               continue;
             }
+              
             for (i = 1; i < rows.length; i++) {
               assignees = rows[i].getElementsByClassName('assignees_');
               for (j = 0; j < assignees.length; ++j) {
@@ -146,6 +153,13 @@
                   }
                   break;
                 }
+              }
+              if (assignees.length == 0 && filters[type][0] == "Show not assigned pulls") {
+                  if (rows_display[i]) {
+                    rows_display[i] += 1;
+                  } else {
+                    rows_display[i] = 1;
+                  }
               }
             }
           } else if (type == "people") {
@@ -230,7 +244,24 @@
       });
      $('.assignees_select').change(function () {
         var selectedItem = $('.assignees_select').val();
+         console.log(selectedItem)
         targetProxy.assignees = selectedItem;
+        if (selectedItem == ""){
+          console.log("lala")
+          if ($('#assign').is(':disabled')) {
+            $('#assign').prop('disabled', !$('#assign').prop('disabled'));
+            $('assignees_select').select2();
+          }
+        } else if (selectedItem.includes("Show not assigned pulls")) {
+          if (selectedItem.length == 1) {
+            targetProxy.assignees = ["Show not assigned pulls"];
+            $('#assign').prop('disabled', !$('#assign').prop('disabled'));
+            $('assignees_select').select2();
+          } else {
+            $(".assignees_select").val("Show not assigned pulls").trigger("change");
+            console.log("dont")
+          }
+        }
       });
     </script>
     <script>
@@ -258,17 +289,6 @@
           targetProxy.labels = [label];
         }
       }
-    </script>
-    <script>
-      function nobodyAssigned() {
-        if (filters['assignees']) {
-          $(".assignees_select").val("").trigger("change");
-          targetProxy.labels = [];
-        } else {
-          targetProxy.labels = [label];
-        }
-      }
-
     </script>
     <script>
       function showMergeable() {

@@ -8,6 +8,9 @@
     <script src="https://code.iconify.design/1/1.0.6/iconify.min.js"></script>
   </head>
   <style>
+  .container {
+    margin-left: 130px !important;
+  }
   .glyphicon {
     position:absolute;right: 1px; top:4px;
     color: #2B2525;
@@ -150,10 +153,8 @@
   <label for="id_label_single">
     Select assignees  (works as union) <br>
   <select class="assignees_select" name="assignees_select" style="width: 100%" multiple="multiple">
-<!--    <optgroup label="Show not assigned pulls">
-      <option>Nobody </option>
-    </optgroup>
-    <optgroup label="Show pulls assigned to"> --!>
+    <option>Show not assigned pulls</option>
+    <optgroup id="assign" label="Show pulls assigned to"> 
       {% for elem in people %}
         <option  data-content="<span class='badge'>{{ elem }} </span>"> {{ elem  }}  </option>
       {% endfor %}
