@@ -158,8 +158,13 @@ class Repos():
         self.collection.update_one(self.info,
                                    {'$set': {"updated": datetime.utcnow()}}, upsert=True)
     def set_used(self):
+        a = self.collection.find_one(self.info)
+        used = []
+        if "used" in a.keys():
+            used = a["used"]
+        used.append(datetime.utcnow())
         self.collection.update_one(self.info,
-                                   {'$set': {"used": datetime.utcnow()}}, upsert=True)
+                                   {'$set': {"used": used}}, upsert=True)
     def update_general_info(self, people, labels, tests):
         People(self.link).update_people(people)
         Labels(self.link).update_labels(labels)
